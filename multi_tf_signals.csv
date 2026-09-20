@@ -1,0 +1,11 @@
+timestamp,symbol,timeframe,signal,regime,rule_set,price,ema9,ema21,rsi,macd_hist,bb_position,backtested_win_rate,backtested_profit_factor,confidence
+2026-09-19 12:52:00 UTC,BTC/USDT,1m,NO_SIGNAL,RANGING,NO_TRIGGER,81310.01,81286.36,81280.55,59.80,+4.7387,Above Upper (106.3%),Insufficient data — low confidence,Insufficient data — low confidence,Insufficient data — low confidence
+2026-09-19 12:50:00 UTC,BTC/USDT,5m,NO_SIGNAL,RANGING,NO_TRIGGER,81310.01,81285.46,81289.83,52.83,-0.7313,Upper Band (60.7%),Insufficient data — low confidence,Insufficient data — low confidence,Insufficient data — low confidence
+2026-09-19 12:45:00 UTC,BTC/USDT,15m,NO_SIGNAL,RANGING,NO_TRIGGER,81310.00,81287.96,81265.45,54.02,-6.7513,Upper Band (53.9%),Insufficient data — low confidence,Insufficient data — low confidence,Insufficient data — low confidence
+2026-09-19 12:00:00 UTC,BTC/USDT,1h,NO_SIGNAL,TRENDING_UP,NO_TRIGGER,81310.00,81219.23,80796.74,68.42,-138.5088,Upper Band (68.4%),15.98%,0.11,Sufficient (N=169)
+2026-09-19 12:00:00 UTC,BTC/USDT,4h,NO_SIGNAL,TRENDING_UP,NO_TRIGGER,81310.00,80311.13,78959.74,76.63,+447.5776,Upper Band (84.6%),11.76%,0.13,Sufficient (N=68)
+2026-09-19 12:53:00 UTC,BTC/USDT,1m,SHORT,RANGING,MEAN_REVERSION_SHORT,81325.99,81294.29,81284.68,63.69,+6.3271,Above Upper (116.0%),Insufficient data — low confidence,Insufficient data — low confidence,Insufficient data — low confidence
+2026-09-19 12:50:00 UTC,BTC/USDT,5m,NO_SIGNAL,RANGING,NO_TRIGGER,81325.99,81288.65,81291.28,54.70,+0.2885,Upper Band (70.1%),Insufficient data — low confidence,Insufficient data — low confidence,Insufficient data — low confidence
+2026-09-19 12:45:00 UTC,BTC/USDT,15m,NO_SIGNAL,RANGING,NO_TRIGGER,81325.99,81291.16,81266.91,54.93,-5.7308,Upper Band (60.9%),Insufficient data — low confidence,Insufficient data — low confidence,Insufficient data — low confidence
+2026-09-19 12:00:00 UTC,BTC/USDT,1h,NO_SIGNAL,TRENDING_UP,NO_TRIGGER,81325.99,81222.43,80798.20,68.63,-137.4884,Upper Band (70.5%),15.98%,0.11,Sufficient (N=169)
+2026-09-19 12:00:00 UTC,BTC/USDT,4h,NO_SIGNAL,TRENDING_UP,NO_TRIGGER,81325.99,80314.33,78961.19,76.70,+448.5981,Upper Band (84.7%),11.76%,0.13,Sufficient (N=68)

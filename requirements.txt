@@ -1,0 +1,8 @@
+# Core dependencies for Spot Trading Bot & Research Engine
+flask>=3.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+yfinance>=0.2.0
+python-dotenv>=1.0.0
+gunicorn>=21.2.0
+ccxt>=4.0.0

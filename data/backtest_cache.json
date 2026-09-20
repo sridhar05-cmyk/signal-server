@@ -1,0 +1,606 @@
+{
+  "BTC/USDT": {
+    "1m": {
+      "TRENDING_UP": {
+        "trades": 9,
+        "wins": 0,
+        "losses": 9,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -92.25
+      },
+      "TRENDING_DOWN": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0.0
+      },
+      "RANGING": {
+        "trades": 11,
+        "wins": 0,
+        "losses": 11,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -215.57
+      },
+      "HIGH_VOLATILITY": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0.0
+      }
+    },
+    "5m": {
+      "TRENDING_UP": {
+        "trades": 19,
+        "wins": 0,
+        "losses": 19,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -284.55
+      },
+      "TRENDING_DOWN": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0.0
+      },
+      "RANGING": {
+        "trades": 21,
+        "wins": 0,
+        "losses": 21,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -411.38
+      },
+      "HIGH_VOLATILITY": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0.0
+      }
+    },
+    "15m": {
+      "TRENDING_UP": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0.0
+      },
+      "TRENDING_DOWN": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0.0
+      },
+      "RANGING": {
+        "trades": 3,
+        "wins": 1,
+        "losses": 2,
+        "win_rate": 33.33,
+        "profit_factor": 0.04,
+        "net_pnl": -37.36
+      },
+      "HIGH_VOLATILITY": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0.0
+      }
+    },
+    "1h": {
+      "TRENDING_UP": {
+        "trades": 169,
+        "wins": 27,
+        "losses": 142,
+        "win_rate": 15.98,
+        "profit_factor": 0.11,
+        "net_pnl": -2845.4
+      },
+      "TRENDING_DOWN": {
+        "trades": 154,
+        "wins": 22,
+        "losses": 132,
+        "win_rate": 14.29,
+        "profit_factor": 0.1,
+        "net_pnl": -2849.1
+      },
+      "RANGING": {
+        "trades": 222,
+        "wins": 43,
+        "losses": 179,
+        "win_rate": 19.37,
+        "profit_factor": 0.11,
+        "net_pnl": -2177.46
+      },
+      "HIGH_VOLATILITY": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0.0
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "trades": 68,
+        "wins": 8,
+        "losses": 60,
+        "win_rate": 11.76,
+        "profit_factor": 0.13,
+        "net_pnl": -1846.83
+      },
+      "TRENDING_DOWN": {
+        "trades": 83,
+        "wins": 11,
+        "losses": 72,
+        "win_rate": 13.25,
+        "profit_factor": 0.16,
+        "net_pnl": -2074.49
+      },
+      "RANGING": {
+        "trades": 57,
+        "wins": 19,
+        "losses": 38,
+        "win_rate": 33.33,
+        "profit_factor": 0.18,
+        "net_pnl": -742.84
+      },
+      "HIGH_VOLATILITY": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0.0
+      }
+    }
+  },
+  "EUR/USD": {
+    "1h": {
+      "TRENDING_UP": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0
+      },
+      "TRENDING_DOWN": {
+        "trades": 4,
+        "wins": 0,
+        "losses": 4,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -21.24
+      },
+      "RANGING": {
+        "trades": 6,
+        "wins": 2,
+        "losses": 4,
+        "win_rate": 33.33,
+        "profit_factor": 0.16,
+        "net_pnl": -27.72
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "trades": 27,
+        "wins": 6,
+        "losses": 21,
+        "win_rate": 22.22,
+        "profit_factor": 0.18,
+        "net_pnl": -143.63
+      },
+      "TRENDING_DOWN": {
+        "trades": 35,
+        "wins": 3,
+        "losses": 32,
+        "win_rate": 8.57,
+        "profit_factor": 0.03,
+        "net_pnl": -452.84
+      },
+      "RANGING": {
+        "trades": 12,
+        "wins": 0,
+        "losses": 12,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -142.05
+      }
+    }
+  },
+  "GBP/JPY": {
+    "1h": {
+      "TRENDING_UP": {
+        "trades": 23,
+        "wins": 0,
+        "losses": 23,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -256.54
+      },
+      "TRENDING_DOWN": {
+        "trades": 38,
+        "wins": 1,
+        "losses": 37,
+        "win_rate": 2.63,
+        "profit_factor": 0.0,
+        "net_pnl": -495.18
+      },
+      "RANGING": {
+        "trades": 139,
+        "wins": 0,
+        "losses": 139,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -2029.04
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": 100.0,
+        "profit_factor": 999.0,
+        "net_pnl": 5.53
+      },
+      "TRENDING_DOWN": {
+        "trades": 2,
+        "wins": 0,
+        "losses": 2,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -60.03
+      },
+      "RANGING": {
+        "trades": 3,
+        "wins": 0,
+        "losses": 3,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -55.89
+      }
+    }
+  },
+  "AUD/CAD": {
+    "1h": {
+      "TRENDING_UP": {
+        "trades": 2,
+        "wins": 2,
+        "losses": 0,
+        "win_rate": 100.0,
+        "profit_factor": 999.0,
+        "net_pnl": 49.62
+      },
+      "TRENDING_DOWN": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0
+      },
+      "RANGING": {
+        "trades": 1,
+        "wins": 0,
+        "losses": 1,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -63.97
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "trades": 100,
+        "wins": 11,
+        "losses": 89,
+        "win_rate": 11.0,
+        "profit_factor": 0.09,
+        "net_pnl": -1491.91
+      },
+      "TRENDING_DOWN": {
+        "trades": 34,
+        "wins": 3,
+        "losses": 31,
+        "win_rate": 8.82,
+        "profit_factor": 0.05,
+        "net_pnl": -699.14
+      },
+      "RANGING": {
+        "trades": 26,
+        "wins": 9,
+        "losses": 17,
+        "win_rate": 34.62,
+        "profit_factor": 0.58,
+        "net_pnl": -66.21
+      }
+    }
+  },
+  "NZD/CHF": {
+    "1h": {
+      "TRENDING_UP": {
+        "trades": 112,
+        "wins": 75,
+        "losses": 37,
+        "win_rate": 66.96,
+        "profit_factor": 1.76,
+        "net_pnl": 1531.33
+      },
+      "TRENDING_DOWN": {
+        "trades": 25,
+        "wins": 25,
+        "losses": 0,
+        "win_rate": 100.0,
+        "profit_factor": 999.0,
+        "net_pnl": 1462.2
+      },
+      "RANGING": {
+        "trades": 38,
+        "wins": 21,
+        "losses": 17,
+        "win_rate": 55.26,
+        "profit_factor": 0.77,
+        "net_pnl": -393.69
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "trades": 201,
+        "wins": 74,
+        "losses": 127,
+        "win_rate": 36.82,
+        "profit_factor": 0.52,
+        "net_pnl": -1974.53
+      },
+      "TRENDING_DOWN": {
+        "trades": 211,
+        "wins": 83,
+        "losses": 128,
+        "win_rate": 39.34,
+        "profit_factor": 1.65,
+        "net_pnl": 596.25
+      },
+      "RANGING": {
+        "trades": 16,
+        "wins": 0,
+        "losses": 16,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -973.5
+      }
+    }
+  },
+  "USD/COP": {
+    "1h": {
+      "TRENDING_UP": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0
+      },
+      "TRENDING_DOWN": {
+        "trades": 21,
+        "wins": 1,
+        "losses": 20,
+        "win_rate": 4.76,
+        "profit_factor": 0.02,
+        "net_pnl": -398.85
+      },
+      "RANGING": {
+        "trades": 18,
+        "wins": 3,
+        "losses": 15,
+        "win_rate": 16.67,
+        "profit_factor": 0.27,
+        "net_pnl": -204.41
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "trades": 27,
+        "wins": 1,
+        "losses": 26,
+        "win_rate": 3.7,
+        "profit_factor": 0.0,
+        "net_pnl": -920.72
+      },
+      "TRENDING_DOWN": {
+        "trades": 62,
+        "wins": 5,
+        "losses": 57,
+        "win_rate": 8.06,
+        "profit_factor": 0.03,
+        "net_pnl": -1719.82
+      },
+      "RANGING": {
+        "trades": 28,
+        "wins": 4,
+        "losses": 24,
+        "win_rate": 14.29,
+        "profit_factor": 0.1,
+        "net_pnl": -542.74
+      }
+    }
+  },
+  "GBP/AUD": {
+    "1h": {
+      "TRENDING_UP": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0
+      },
+      "TRENDING_DOWN": {
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": 100.0,
+        "profit_factor": 999.0,
+        "net_pnl": 4.81
+      },
+      "RANGING": {
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": 100.0,
+        "profit_factor": 999.0,
+        "net_pnl": 5.01
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0
+      },
+      "TRENDING_DOWN": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0
+      },
+      "RANGING": {
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": 100.0,
+        "profit_factor": 999.0,
+        "net_pnl": 7.08
+      }
+    }
+  },
+  "EUR/CAD": {
+    "1h": {
+      "TRENDING_UP": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0
+      },
+      "TRENDING_DOWN": {
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": 100.0,
+        "profit_factor": 999.0,
+        "net_pnl": 3.9
+      },
+      "RANGING": {
+        "trades": 4,
+        "wins": 0,
+        "losses": 4,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -126.48
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": 0
+      },
+      "TRENDING_DOWN": {
+        "trades": 18,
+        "wins": 1,
+        "losses": 17,
+        "win_rate": 5.56,
+        "profit_factor": 0.0,
+        "net_pnl": -1.19
+      },
+      "RANGING": {
+        "trades": 5,
+        "wins": 0,
+        "losses": 5,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -65.39
+      }
+    }
+  },
+  "NZD/CAD": {
+    "1h": {
+      "TRENDING_UP": {
+        "trades": 2,
+        "wins": 2,
+        "losses": 0,
+        "win_rate": 100.0,
+        "profit_factor": 999.0,
+        "net_pnl": 52.6
+      },
+      "TRENDING_DOWN": {
+        "trades": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": 100.0,
+        "profit_factor": 999.0,
+        "net_pnl": 12.92
+      },
+      "RANGING": {
+        "trades": 9,
+        "wins": 0,
+        "losses": 9,
+        "win_rate": 0.0,
+        "profit_factor": 0.0,
+        "net_pnl": -340.77
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "trades": 71,
+        "wins": 20,
+        "losses": 51,
+        "win_rate": 28.17,
+        "profit_factor": 0.25,
+        "net_pnl": -816.36
+      },
+      "TRENDING_DOWN": {
+        "trades": 77,
+        "wins": 29,
+        "losses": 48,
+        "win_rate": 37.66,
+        "profit_factor": 0.26,
+        "net_pnl": -692.11
+      },
+      "RANGING": {
+        "trades": 23,
+        "wins": 11,
+        "losses": 12,
+        "win_rate": 47.83,
+        "profit_factor": 0.55,
+        "net_pnl": -95.48
+      }
+    }
+  }
+}

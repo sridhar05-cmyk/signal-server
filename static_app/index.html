@@ -1,0 +1,3192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Signal Research Panel | Offline Empirical Observer</title>
+
+  <!-- PWA Metadata -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3b82f6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- Typography Fallbacks -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+/* Signal Research Panel - Modern Dark Theme Stylesheet */
+:root {
+  --bg-main: #0a0d14;
+  --bg-card: #111726;
+  --bg-card-sub: #171f33;
+  --border-subtle: #212c45;
+  --border-strong: #303f63;
+  
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --color-brand: #3b82f6;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #06b6d4;
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   Top Fixed Non-Dismissible Safety Banner
+   ========================================================================== */
+.top-notice-banner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(17, 23, 38, 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 10px 20px;
+}
+
+.banner-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.banner-badge {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+}
+
+.banner-text {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   Main Application Container
+   ========================================================================== */
+.app-container {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Header Section */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.panel-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.panel-header .subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.action-btn {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  background-color: var(--bg-card-sub);
+  border-color: var(--color-brand);
+}
+
+.timestamp-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ==========================================================================
+   Selection Cards (Pairs & Timeframes)
+   ========================================================================== */
+.selection-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 20px;
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.step-number {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+}
+
+.step-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.step-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Chips Container */
+.chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  background-color: var(--bg-card-sub);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.chip:hover:not(.disabled) {
+  border-color: var(--color-brand);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.chip.active {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: var(--color-brand);
+  color: #93c5fd;
+  font-weight: 700;
+}
+
+.chip.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.chip-status-tag {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+.chip-status-tag.tested {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.chip-status-tag.untested {
+  background-color: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+}
+
+/* Pair Grouping */
+.pair-groups-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+}
+
+.pair-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.group-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Data Source Badge */
+.source-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  padding: 3px 8px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  margin-top: 4px;
+}
+
+.source-tag.forex {
+  background-color: rgba(14, 165, 233, 0.12);
+  color: #38bdf8;
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.source-tag.crypto {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+/* Timeframe Buttons */
+.timeframe-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tf-btn {
+  background-color: var(--bg-card-sub);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 9px 24px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tf-btn:hover {
+  border-color: var(--color-brand);
+  color: #fff;
+}
+
+.tf-btn.active {
+  background-color: var(--color-brand);
+  border-color: var(--color-brand);
+  color: #fff;
+}
+
+/* ==========================================================================
+   Result Panel
+   ========================================================================== */
+.result-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.result-summary-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.pair-timeframe-tag {
+  font-size: 1.35rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+}
+
+.dot-separator {
+  color: var(--text-muted);
+}
+
+.price-display {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.price-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.price-value {
+  font-family: var(--font-mono);
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #60a5fa;
+}
+
+.summary-center, .summary-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+
+.metric-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.signal-badge {
+  padding: 8px 22px;
+  border-radius: var(--radius-sm);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.signal-badge.signal-long {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.signal-badge.signal-short {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.signal-badge.signal-hold {
+  background-color: rgba(100, 116, 139, 0.15);
+  color: #94a3b8;
+  border-color: rgba(100, 116, 139, 0.3);
+}
+
+.rule-subtext, .macro-subtext {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.regime-badge {
+  background-color: var(--bg-card-sub);
+  border: 1px solid var(--border-strong);
+  color: #e2e8f0;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 7px 18px;
+  border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   Analysis Grid (Backtest vs Live Indicators)
+   ========================================================================== */
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 20px;
+}
+
+.analysis-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.card-tag {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  background-color: rgba(255, 255, 255, 0.07);
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.card-description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Win Rate Gauge Block */
+.win-rate-block {
+  background-color: var(--bg-card-sub);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+.win-rate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.stat-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.stat-number {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Gauge with 50% Breakeven Line */
+.gauge-wrapper {
+  margin: 18px 0 10px;
+}
+
+.gauge-track {
+  position: relative;
+  height: 22px;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-strong);
+  border-radius: 11px;
+  overflow: visible;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #ef4444, #f59e0b);
+  transition: width 0.4s ease-out;
+}
+
+.gauge-fill.profitable {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.breakeven-line {
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  left: 50%;
+  width: 2px;
+  background-color: #f8fafc;
+  transform: translateX(-50%);
+  z-index: 2;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+}
+
+.breakeven-label {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #f8fafc;
+  white-space: nowrap;
+}
+
+/* Insufficient Data Alert Box */
+.warning-box {
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fcd34d;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.82rem;
+  margin-top: 10px;
+}
+
+.warning-box p {
+  color: #fde68a;
+  margin-top: 4px;
+  font-size: 0.77rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Secondary Metrics Grid */
+.backtest-metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.metric-box {
+  background-color: var(--bg-card-sub);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.box-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.box-value {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 2px 0;
+}
+
+.box-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Indicators Grid */
+.indicators-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.ind-card {
+  background-color: var(--bg-card-sub);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ind-name {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.ind-main-val {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.ind-dual-value {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.vs-divider {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.mono-val {
+  font-family: var(--font-mono);
+}
+
+.ind-status {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+/* Suggested Levels Card */
+.suggested-levels-box {
+  background-color: rgba(30, 41, 59, 0.4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-top: 4px;
+}
+
+.levels-header {
+  margin-bottom: 8px;
+}
+
+.levels-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.levels-row {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+}
+
+.sl-val {
+  color: #f87171;
+}
+
+.tp-val {
+  color: #34d399;
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+.panel-footer {
+  margin-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 20px;
+}
+
+.footer-notice p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .result-summary-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .summary-center, .summary-right {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Standalone Static App Enhancements */
+.snapshot-notice-banner {
+  background: linear-gradient(90deg, #111726, #0e1626);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+  color: #94a3b8;
+  padding: 10px 18px;
+  font-size: 0.84rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  flex-wrap: wrap;
+}
+
+.snapshot-badge {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.snapshot-status-tag {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.regime-selector-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.regime-btn {
+  background-color: var(--bg-card-sub);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.regime-btn:hover {
+  border-color: var(--color-brand);
+  color: #fff;
+}
+
+.regime-btn.active {
+  background-color: rgba(59, 130, 246, 0.2);
+  border-color: var(--color-brand);
+  color: #93c5fd;
+  font-weight: 700;
+}
+
+.regime-btn .regime-count {
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.breakdown-table-wrapper {
+  overflow-x: auto;
+  margin-top: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  font-family: var(--font-sans);
+}
+
+.breakdown-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background-color: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.breakdown-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.breakdown-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.breakdown-table tbody tr:hover {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.breakdown-table tbody tr.active-row {
+  background-color: rgba(59, 130, 246, 0.16);
+  border-left: 3px solid var(--color-brand);
+}
+
+.status-pill {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+.status-pill.valid {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.status-pill.insufficient {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.spec-box {
+  background-color: var(--bg-card-sub);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+.spec-box-title {
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: #60a5fa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spec-box-body {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.spec-box-body ul {
+  padding-left: 18px;
+  margin-top: 6px;
+}
+
+.spec-box-body li {
+  margin-bottom: 4px;
+}
+
+.empty-state-notice {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+
+  </style>
+</head>
+<body>
+  <!-- Fixed, Non-Dismissible Safety & Integrity Banner -->
+  <header class="top-notice-banner" role="alert">
+    <div class="banner-inner">
+      <span class="banner-badge">RESEARCH ONLY</span>
+      <span class="banner-text">Read-only research tool. No orders are placed. No paid tier unlocks different data.</span>
+    </div>
+  </header>
+
+  <!-- Static Snapshot Notice Note (Requirement 5) -->
+  <div class="snapshot-notice-banner">
+    <span class="snapshot-badge">SNAPSHOT</span>
+    <span>Snapshot data as of 2026-09-19 13:57:15 UTC — not live-updating. Re-run backtest.py and rebuild this page for fresh numbers.</span>
+  </div>
+
+  <main class="app-container">
+    <!-- Header Title Section -->
+    <section class="panel-header">
+      <div class="title-group">
+        <h1>Signal Research Panel</h1>
+        <p class="subtitle">Standalone Research Console — Verified empirical walk-forward backtest metrics across market regimes.</p>
+      </div>
+      <div class="header-actions">
+        <span class="snapshot-status-tag">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>OFFLINE SNAPSHOT</span>
+        </span>
+        <span class="timestamp-label">2026-09-19 13:57:15 UTC</span>
+      </div>
+    </section>
+
+    <!-- Step 1: Pair Picker -->
+    <section class="selection-card">
+      <div class="step-header">
+        <span class="step-number">STEP 1</span>
+        <h2>Select Trading Pair</h2>
+        <span class="step-hint">Pairs without sufficient backtested data (N &lt; 30) are labeled Untested</span>
+      </div>
+      <div id="pairContainer" class="chips-container" aria-label="Trading Pairs">
+        <!-- Injected via JavaScript from embedded PAIR_GROUPS -->
+      </div>
+    </section>
+
+    <!-- Step 2: Timeframe Picker -->
+    <section class="selection-card">
+      <div class="step-header">
+        <span class="step-number">STEP 2</span>
+        <h2>Select Timeframe</h2>
+        <span class="step-hint">Each interval evaluates an independent strategy model</span>
+      </div>
+      <div id="timeframeContainer" class="timeframe-buttons" aria-label="Timeframes">
+        <button class="tf-btn" data-tf="1m">1m</button>
+        <button class="tf-btn" data-tf="5m">5m</button>
+        <button class="tf-btn" data-tf="15m">15m</button>
+        <button class="tf-btn active" data-tf="1h">1h</button>
+        <button class="tf-btn" data-tf="4h">4h</button>
+      </div>
+    </section>
+
+    <!-- Step 3: Market Regime Selector -->
+    <section class="selection-card">
+      <div class="step-header">
+        <span class="step-number">STEP 3</span>
+        <h2>Select Market Regime Focus</h2>
+        <span class="step-hint">Examine performance in specific trend regimes or view combined totals</span>
+      </div>
+      <div id="regimeContainer" class="regime-selector-buttons" aria-label="Market Regimes">
+        <!-- Injected via JavaScript -->
+      </div>
+    </section>
+
+    <!-- Result Panel (Signal Summary, Backtested Metrics, Regime Matrix) -->
+    <section id="resultPanel" class="result-panel">
+      <!-- Top Signal Summary Header -->
+      <div class="result-summary-card">
+        <div class="summary-left">
+          <div class="pair-timeframe-tag">
+            <span id="displaySymbol">BTC/USDT</span>
+            <span class="dot-separator">•</span>
+            <span id="displayTimeframe">1h</span>
+          </div>
+          <div id="dataSourceBadge" class="source-tag crypto">Static Snapshot — Binance</div>
+          <div class="price-display">
+            <span class="price-label">Evaluation Mode:</span>
+            <span id="displayPrice" class="price-value">Walk-Forward Simulation</span>
+          </div>
+        </div>
+
+        <div class="summary-center">
+          <span class="metric-label">REGIME EVALUATION</span>
+          <div id="signalBadge" class="signal-badge signal-long">
+            <span id="signalText">ALL REGIMES</span>
+          </div>
+          <span id="ruleSetText" class="rule-subtext">Aggregated Strategy Performance</span>
+        </div>
+
+        <div class="summary-right">
+          <span class="metric-label">STATISTICAL STATUS</span>
+          <div id="regimeBadge" class="regime-badge">EMPIRICAL DATA</div>
+          <span id="macroTrendText" class="macro-subtext">Macro Filter: 4h 200 EMA Active</span>
+        </div>
+      </div>
+
+      <!-- Main Two-Column Analysis Section -->
+      <div class="analysis-grid">
+        <!-- Left: Empirical Backtest Track Record -->
+        <div class="analysis-card backtest-card">
+          <div class="card-header">
+            <h3>Historical Backtest Performance</h3>
+            <span id="regimeTagLabel" class="card-tag">EXACT REGIME + TIMEFRAME</span>
+          </div>
+          <p id="regimeDescription" class="card-description">
+            Empirical walk-forward metrics for this exact pair, timeframe, and regime combination.
+          </p>
+
+          <!-- Win Rate Visualization Bar -->
+          <div class="win-rate-block">
+            <div class="win-rate-header">
+              <span class="stat-title">Historical Win Rate</span>
+              <span id="winRateValue" class="stat-number">--.-%</span>
+            </div>
+
+            <!-- Gauge Container with 50% Breakeven Threshold -->
+            <div class="gauge-wrapper">
+              <div class="gauge-track">
+                <div id="winRateBar" class="gauge-fill" style="width: 0%;"></div>
+                <!-- 50% Reference Marker -->
+                <div class="breakeven-line" title="50% Breakeven Reference">
+                  <span class="breakeven-label">50% Breakeven</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Insufficient Data Alert Box (Shown when sample size < 30) -->
+            <div id="insufficientDataAlert" class="warning-box hidden">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <div>
+                <strong>Insufficient data — not enough completed trades yet.</strong>
+                <p>Empirical sample size is under the mandatory 30-trade statistical confidence threshold. Win rate and profit factor are withheld to prevent misleading estimation.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Secondary Backtest Metrics Grid -->
+          <div class="backtest-metrics-grid">
+            <div class="metric-box">
+              <span class="box-label">Profit Factor</span>
+              <span id="profitFactorValue" class="box-value">-.--</span>
+              <span class="box-hint">Gross Profit / Gross Loss</span>
+            </div>
+            <div class="metric-box">
+              <span class="box-label">Sample Size</span>
+              <span id="sampleSizeValue" class="box-value">n = --</span>
+              <span id="sampleConfidenceLabel" class="box-hint">Trades recorded</span>
+            </div>
+            <div class="metric-box">
+              <span class="box-label">W / L Record</span>
+              <span id="recordValue" class="box-value">--W / --L</span>
+              <span class="box-hint">Historical outcomes</span>
+            </div>
+            <div class="metric-box">
+              <span class="box-label">Net P&amp;L</span>
+              <span id="netPnlValue" class="box-value">$---.--</span>
+              <span class="box-hint">Simulated $10k base</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Market Regime Breakdown Matrix -->
+        <div class="analysis-card indicators-card">
+          <div class="card-header">
+            <h3>Market Regime Breakdown Matrix</h3>
+            <span class="card-tag">ALL REGIMES</span>
+          </div>
+          <p class="card-description">
+            Complete empirical performance across all classified market conditions for this timeframe. Click any row to focus.
+          </p>
+
+          <div class="breakdown-table-wrapper">
+            <table class="breakdown-table">
+              <thead>
+                <tr>
+                  <th>Regime Condition</th>
+                  <th>Trades (N)</th>
+                  <th>Win Rate</th>
+                  <th>Profit Factor</th>
+                  <th>Net P&amp;L</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="regimeBreakdownBody">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strategy Framework & Technical Invariants Card -->
+      <div class="analysis-card" style="margin-top: 20px;">
+        <div class="card-header">
+          <h3>Strategy Engine &amp; Technical Confluence Rules</h3>
+          <span class="card-tag">RESEARCH SPECIFICATION</span>
+        </div>
+        <div class="spec-grid">
+          <div class="spec-box">
+            <div class="spec-box-title">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              <span>Trend Filter (Macro)</span>
+            </div>
+            <div class="spec-box-body">
+              Long entries permitted only when 4h 200 EMA is sloping upward. Short entries permitted only when sloping downward. Counter-trend trades strictly filtered.
+            </div>
+          </div>
+
+          <div class="spec-box">
+            <div class="spec-box-title">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <span>Confluence Engine (3 of 4)</span>
+            </div>
+            <div class="spec-box-body">
+              <ul>
+                <li><strong>Trend:</strong> EMA9 &gt; EMA21 (Bull) / EMA9 &lt; EMA21 (Bear)</li>
+                <li><strong>Momentum:</strong> RSI in 40–65 pullbacks</li>
+                <li><strong>MACD:</strong> Histogram turning positive/negative</li>
+                <li><strong>Volatility:</strong> Pullback near EMA9 / Bands</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="spec-box">
+            <div class="spec-box-title">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span>Dynamic Trailing Exit</span>
+            </div>
+            <div class="spec-box-body">
+              <ul>
+                <li><strong>1x ATR Profit:</strong> Move Stop-Loss to Breakeven</li>
+                <li><strong>2x ATR Profit:</strong> Trail Stop 1x ATR behind price</li>
+                <li><strong>Risk Cap:</strong> Fixed 2% risk, NO martingale</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="spec-box">
+            <div class="spec-box-title">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>Empirical Confidence Invariant</span>
+            </div>
+            <div class="spec-box-body">
+              Results require minimum N &ge; 30 sample size. Any regime or pair with N &lt; 30 is labeled Insufficient Data with win rates withheld to prevent estimation bias.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer Disclaimers -->
+    <footer class="panel-footer">
+      <div class="footer-notice">
+        <p><strong>Transparency Standard:</strong> All metrics represent empirical walk-forward backtest simulations over authentic historical market data (Binance Public API for Crypto, Yahoo Finance for Spot Forex). This standalone console is strictly for offline research observation and does not place trades or connect to any brokerage execution API.</p>
+      </div>
+    </footer>
+  </main>
+
+  <!-- Standalone Script with Embedded Data Snapshot (Zero API / Fetch Calls) -->
+  <script>
+    // Embedded Backtest Snapshot directly from backtest_cache.json
+    const BACKTEST_CACHE = {
+  "BTC/USDT": {
+    "1m": {
+      "TRENDING_UP": {
+        "pair": "BTC/USDT",
+        "timeframe": "1m",
+        "regime": "TRENDING_UP",
+        "trades": 9,
+        "sample_size": 9,
+        "wins": 0,
+        "losses": 9,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -92.25,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "BTC/USDT",
+        "timeframe": "1m",
+        "regime": "TRENDING_DOWN",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "BTC/USDT",
+        "timeframe": "1m",
+        "regime": "RANGING",
+        "trades": 11,
+        "sample_size": 11,
+        "wins": 0,
+        "losses": 11,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -215.57,
+        "insufficient_data": true
+      },
+      "HIGH_VOLATILITY": {
+        "pair": "BTC/USDT",
+        "timeframe": "1m",
+        "regime": "HIGH_VOLATILITY",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "BTC/USDT",
+        "timeframe": "1m",
+        "regime": "COMBINED",
+        "trades": 20,
+        "sample_size": 20,
+        "wins": 0,
+        "losses": 20,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -307.82,
+        "insufficient_data": true
+      }
+    },
+    "5m": {
+      "TRENDING_UP": {
+        "pair": "BTC/USDT",
+        "timeframe": "5m",
+        "regime": "TRENDING_UP",
+        "trades": 19,
+        "sample_size": 19,
+        "wins": 0,
+        "losses": 19,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -284.55,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "BTC/USDT",
+        "timeframe": "5m",
+        "regime": "TRENDING_DOWN",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "BTC/USDT",
+        "timeframe": "5m",
+        "regime": "RANGING",
+        "trades": 21,
+        "sample_size": 21,
+        "wins": 0,
+        "losses": 21,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -411.38,
+        "insufficient_data": true
+      },
+      "HIGH_VOLATILITY": {
+        "pair": "BTC/USDT",
+        "timeframe": "5m",
+        "regime": "HIGH_VOLATILITY",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "BTC/USDT",
+        "timeframe": "5m",
+        "regime": "COMBINED",
+        "trades": 40,
+        "sample_size": 40,
+        "wins": 0,
+        "losses": 40,
+        "win_rate": 0.0,
+        "raw_win_rate": 0.0,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -695.93,
+        "insufficient_data": false
+      }
+    },
+    "15m": {
+      "TRENDING_UP": {
+        "pair": "BTC/USDT",
+        "timeframe": "15m",
+        "regime": "TRENDING_UP",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "BTC/USDT",
+        "timeframe": "15m",
+        "regime": "TRENDING_DOWN",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "BTC/USDT",
+        "timeframe": "15m",
+        "regime": "RANGING",
+        "trades": 3,
+        "sample_size": 3,
+        "wins": 1,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 33.33,
+        "profit_factor": null,
+        "raw_profit_factor": 0.04,
+        "net_pnl": -37.36,
+        "insufficient_data": true
+      },
+      "HIGH_VOLATILITY": {
+        "pair": "BTC/USDT",
+        "timeframe": "15m",
+        "regime": "HIGH_VOLATILITY",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "BTC/USDT",
+        "timeframe": "15m",
+        "regime": "COMBINED",
+        "trades": 3,
+        "sample_size": 3,
+        "wins": 1,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 33.33,
+        "profit_factor": null,
+        "raw_profit_factor": 0.04,
+        "net_pnl": -37.36,
+        "insufficient_data": true
+      }
+    },
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "BTC/USDT",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 169,
+        "sample_size": 169,
+        "wins": 27,
+        "losses": 142,
+        "win_rate": 15.98,
+        "raw_win_rate": 15.98,
+        "profit_factor": 0.11,
+        "raw_profit_factor": 0.11,
+        "net_pnl": -2845.4,
+        "insufficient_data": false
+      },
+      "TRENDING_DOWN": {
+        "pair": "BTC/USDT",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 154,
+        "sample_size": 154,
+        "wins": 22,
+        "losses": 132,
+        "win_rate": 14.29,
+        "raw_win_rate": 14.29,
+        "profit_factor": 0.1,
+        "raw_profit_factor": 0.1,
+        "net_pnl": -2849.1,
+        "insufficient_data": false
+      },
+      "RANGING": {
+        "pair": "BTC/USDT",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 222,
+        "sample_size": 222,
+        "wins": 43,
+        "losses": 179,
+        "win_rate": 19.37,
+        "raw_win_rate": 19.37,
+        "profit_factor": 0.11,
+        "raw_profit_factor": 0.11,
+        "net_pnl": -2177.46,
+        "insufficient_data": false
+      },
+      "HIGH_VOLATILITY": {
+        "pair": "BTC/USDT",
+        "timeframe": "1h",
+        "regime": "HIGH_VOLATILITY",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "BTC/USDT",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 545,
+        "sample_size": 545,
+        "wins": 92,
+        "losses": 453,
+        "win_rate": 16.88,
+        "raw_win_rate": 16.88,
+        "profit_factor": 0.11,
+        "raw_profit_factor": 0.11,
+        "net_pnl": -7871.96,
+        "insufficient_data": false
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "BTC/USDT",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 68,
+        "sample_size": 68,
+        "wins": 8,
+        "losses": 60,
+        "win_rate": 11.76,
+        "raw_win_rate": 11.76,
+        "profit_factor": 0.13,
+        "raw_profit_factor": 0.13,
+        "net_pnl": -1846.83,
+        "insufficient_data": false
+      },
+      "TRENDING_DOWN": {
+        "pair": "BTC/USDT",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 83,
+        "sample_size": 83,
+        "wins": 11,
+        "losses": 72,
+        "win_rate": 13.25,
+        "raw_win_rate": 13.25,
+        "profit_factor": 0.16,
+        "raw_profit_factor": 0.16,
+        "net_pnl": -2074.49,
+        "insufficient_data": false
+      },
+      "RANGING": {
+        "pair": "BTC/USDT",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 57,
+        "sample_size": 57,
+        "wins": 19,
+        "losses": 38,
+        "win_rate": 33.33,
+        "raw_win_rate": 33.33,
+        "profit_factor": 0.18,
+        "raw_profit_factor": 0.18,
+        "net_pnl": -742.84,
+        "insufficient_data": false
+      },
+      "HIGH_VOLATILITY": {
+        "pair": "BTC/USDT",
+        "timeframe": "4h",
+        "regime": "HIGH_VOLATILITY",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "BTC/USDT",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 208,
+        "sample_size": 208,
+        "wins": 38,
+        "losses": 170,
+        "win_rate": 18.27,
+        "raw_win_rate": 18.27,
+        "profit_factor": 0.15,
+        "raw_profit_factor": 0.15,
+        "net_pnl": -4664.16,
+        "insufficient_data": false
+      }
+    }
+  },
+  "EUR/USD": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "EUR/USD",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "EUR/USD",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 4,
+        "sample_size": 4,
+        "wins": 0,
+        "losses": 4,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -21.24,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "EUR/USD",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 6,
+        "sample_size": 6,
+        "wins": 2,
+        "losses": 4,
+        "win_rate": null,
+        "raw_win_rate": 33.33,
+        "profit_factor": null,
+        "raw_profit_factor": 0.16,
+        "net_pnl": -27.72,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "EUR/USD",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 10,
+        "sample_size": 10,
+        "wins": 2,
+        "losses": 8,
+        "win_rate": null,
+        "raw_win_rate": 20.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.09,
+        "net_pnl": -48.96,
+        "insufficient_data": true
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "EUR/USD",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 27,
+        "sample_size": 27,
+        "wins": 6,
+        "losses": 21,
+        "win_rate": null,
+        "raw_win_rate": 22.22,
+        "profit_factor": null,
+        "raw_profit_factor": 0.18,
+        "net_pnl": -143.63,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "EUR/USD",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 35,
+        "sample_size": 35,
+        "wins": 3,
+        "losses": 32,
+        "win_rate": 8.57,
+        "raw_win_rate": 8.57,
+        "profit_factor": 0.03,
+        "raw_profit_factor": 0.03,
+        "net_pnl": -452.84,
+        "insufficient_data": false
+      },
+      "RANGING": {
+        "pair": "EUR/USD",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 12,
+        "sample_size": 12,
+        "wins": 0,
+        "losses": 12,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -142.05,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "EUR/USD",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 74,
+        "sample_size": 74,
+        "wins": 9,
+        "losses": 65,
+        "win_rate": 12.16,
+        "raw_win_rate": 12.16,
+        "profit_factor": 0.06,
+        "raw_profit_factor": 0.06,
+        "net_pnl": -738.52,
+        "insufficient_data": false
+      }
+    }
+  },
+  "GBP/JPY": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "GBP/JPY",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 23,
+        "sample_size": 23,
+        "wins": 0,
+        "losses": 23,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -256.54,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "GBP/JPY",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 38,
+        "sample_size": 38,
+        "wins": 1,
+        "losses": 37,
+        "win_rate": 2.63,
+        "raw_win_rate": 2.63,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -495.18,
+        "insufficient_data": false
+      },
+      "RANGING": {
+        "pair": "GBP/JPY",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 139,
+        "sample_size": 139,
+        "wins": 0,
+        "losses": 139,
+        "win_rate": 0.0,
+        "raw_win_rate": 0.0,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -2029.04,
+        "insufficient_data": false
+      },
+      "COMBINED": {
+        "pair": "GBP/JPY",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 200,
+        "sample_size": 200,
+        "wins": 1,
+        "losses": 199,
+        "win_rate": 0.5,
+        "raw_win_rate": 0.5,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -2780.76,
+        "insufficient_data": false
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "GBP/JPY",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 5.53,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "GBP/JPY",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 2,
+        "sample_size": 2,
+        "wins": 0,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -60.03,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "GBP/JPY",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 3,
+        "sample_size": 3,
+        "wins": 0,
+        "losses": 3,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -55.89,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "GBP/JPY",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 6,
+        "sample_size": 6,
+        "wins": 1,
+        "losses": 5,
+        "win_rate": null,
+        "raw_win_rate": 16.67,
+        "profit_factor": null,
+        "raw_profit_factor": 0.05,
+        "net_pnl": -110.39,
+        "insufficient_data": true
+      }
+    }
+  },
+  "AUD/CAD": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "AUD/CAD",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 2,
+        "sample_size": 2,
+        "wins": 2,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 49.62,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "AUD/CAD",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "AUD/CAD",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 0,
+        "losses": 1,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -63.97,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "AUD/CAD",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 3,
+        "sample_size": 3,
+        "wins": 2,
+        "losses": 1,
+        "win_rate": null,
+        "raw_win_rate": 66.67,
+        "profit_factor": null,
+        "raw_profit_factor": 0.78,
+        "net_pnl": -14.35,
+        "insufficient_data": true
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "AUD/CAD",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 100,
+        "sample_size": 100,
+        "wins": 11,
+        "losses": 89,
+        "win_rate": 11.0,
+        "raw_win_rate": 11.0,
+        "profit_factor": 0.09,
+        "raw_profit_factor": 0.09,
+        "net_pnl": -1491.91,
+        "insufficient_data": false
+      },
+      "TRENDING_DOWN": {
+        "pair": "AUD/CAD",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 34,
+        "sample_size": 34,
+        "wins": 3,
+        "losses": 31,
+        "win_rate": 8.82,
+        "raw_win_rate": 8.82,
+        "profit_factor": 0.05,
+        "raw_profit_factor": 0.05,
+        "net_pnl": -699.14,
+        "insufficient_data": false
+      },
+      "RANGING": {
+        "pair": "AUD/CAD",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 26,
+        "sample_size": 26,
+        "wins": 9,
+        "losses": 17,
+        "win_rate": null,
+        "raw_win_rate": 34.62,
+        "profit_factor": null,
+        "raw_profit_factor": 0.58,
+        "net_pnl": -66.21,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "AUD/CAD",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 160,
+        "sample_size": 160,
+        "wins": 23,
+        "losses": 137,
+        "win_rate": 14.37,
+        "raw_win_rate": 14.37,
+        "profit_factor": 0.11,
+        "raw_profit_factor": 0.11,
+        "net_pnl": -2257.26,
+        "insufficient_data": false
+      }
+    }
+  },
+  "NZD/CHF": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "NZD/CHF",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 112,
+        "sample_size": 112,
+        "wins": 75,
+        "losses": 37,
+        "win_rate": 66.96,
+        "raw_win_rate": 66.96,
+        "profit_factor": 1.76,
+        "raw_profit_factor": 1.76,
+        "net_pnl": 1531.33,
+        "insufficient_data": false
+      },
+      "TRENDING_DOWN": {
+        "pair": "NZD/CHF",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 25,
+        "sample_size": 25,
+        "wins": 25,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 1462.2,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "NZD/CHF",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 38,
+        "sample_size": 38,
+        "wins": 21,
+        "losses": 17,
+        "win_rate": 55.26,
+        "raw_win_rate": 55.26,
+        "profit_factor": 0.77,
+        "raw_profit_factor": 0.77,
+        "net_pnl": -393.69,
+        "insufficient_data": false
+      },
+      "COMBINED": {
+        "pair": "NZD/CHF",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 175,
+        "sample_size": 175,
+        "wins": 121,
+        "losses": 54,
+        "win_rate": 69.14,
+        "raw_win_rate": 69.14,
+        "profit_factor": 1.7,
+        "raw_profit_factor": 1.7,
+        "net_pnl": 2599.84,
+        "insufficient_data": false
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "NZD/CHF",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 201,
+        "sample_size": 201,
+        "wins": 74,
+        "losses": 127,
+        "win_rate": 36.82,
+        "raw_win_rate": 36.82,
+        "profit_factor": 0.52,
+        "raw_profit_factor": 0.52,
+        "net_pnl": -1974.53,
+        "insufficient_data": false
+      },
+      "TRENDING_DOWN": {
+        "pair": "NZD/CHF",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 211,
+        "sample_size": 211,
+        "wins": 83,
+        "losses": 128,
+        "win_rate": 39.34,
+        "raw_win_rate": 39.34,
+        "profit_factor": 1.65,
+        "raw_profit_factor": 1.65,
+        "net_pnl": 596.25,
+        "insufficient_data": false
+      },
+      "RANGING": {
+        "pair": "NZD/CHF",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 16,
+        "sample_size": 16,
+        "wins": 0,
+        "losses": 16,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -973.5,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "NZD/CHF",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 428,
+        "sample_size": 428,
+        "wins": 157,
+        "losses": 271,
+        "win_rate": 36.68,
+        "raw_win_rate": 36.68,
+        "profit_factor": 0.61,
+        "raw_profit_factor": 0.61,
+        "net_pnl": -2351.78,
+        "insufficient_data": false
+      }
+    }
+  },
+  "USD/COP": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "USD/COP",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "USD/COP",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 21,
+        "sample_size": 21,
+        "wins": 1,
+        "losses": 20,
+        "win_rate": null,
+        "raw_win_rate": 4.76,
+        "profit_factor": null,
+        "raw_profit_factor": 0.02,
+        "net_pnl": -398.85,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "USD/COP",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 18,
+        "sample_size": 18,
+        "wins": 3,
+        "losses": 15,
+        "win_rate": null,
+        "raw_win_rate": 16.67,
+        "profit_factor": null,
+        "raw_profit_factor": 0.27,
+        "net_pnl": -204.41,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "USD/COP",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 39,
+        "sample_size": 39,
+        "wins": 4,
+        "losses": 35,
+        "win_rate": 10.26,
+        "raw_win_rate": 10.26,
+        "profit_factor": 0.12,
+        "raw_profit_factor": 0.12,
+        "net_pnl": -603.26,
+        "insufficient_data": false
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "USD/COP",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 27,
+        "sample_size": 27,
+        "wins": 1,
+        "losses": 26,
+        "win_rate": null,
+        "raw_win_rate": 3.7,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -920.72,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "USD/COP",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 62,
+        "sample_size": 62,
+        "wins": 5,
+        "losses": 57,
+        "win_rate": 8.06,
+        "raw_win_rate": 8.06,
+        "profit_factor": 0.03,
+        "raw_profit_factor": 0.03,
+        "net_pnl": -1719.82,
+        "insufficient_data": false
+      },
+      "RANGING": {
+        "pair": "USD/COP",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 28,
+        "sample_size": 28,
+        "wins": 4,
+        "losses": 24,
+        "win_rate": null,
+        "raw_win_rate": 14.29,
+        "profit_factor": null,
+        "raw_profit_factor": 0.1,
+        "net_pnl": -542.74,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "USD/COP",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 117,
+        "sample_size": 117,
+        "wins": 10,
+        "losses": 107,
+        "win_rate": 8.55,
+        "raw_win_rate": 8.55,
+        "profit_factor": 0.04,
+        "raw_profit_factor": 0.04,
+        "net_pnl": -3183.28,
+        "insufficient_data": false
+      }
+    }
+  },
+  "GBP/AUD": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "GBP/AUD",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "GBP/AUD",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 4.81,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "GBP/AUD",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 5.01,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "GBP/AUD",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 2,
+        "sample_size": 2,
+        "wins": 2,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 9.82,
+        "insufficient_data": true
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "GBP/AUD",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "GBP/AUD",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "GBP/AUD",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 7.08,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "GBP/AUD",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 7.08,
+        "insufficient_data": true
+      }
+    }
+  },
+  "EUR/CAD": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "EUR/CAD",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "EUR/CAD",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 3.9,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "EUR/CAD",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 4,
+        "sample_size": 4,
+        "wins": 0,
+        "losses": 4,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -126.48,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "EUR/CAD",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 5,
+        "sample_size": 5,
+        "wins": 1,
+        "losses": 4,
+        "win_rate": null,
+        "raw_win_rate": 20.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.03,
+        "net_pnl": -122.58,
+        "insufficient_data": true
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "EUR/CAD",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "EUR/CAD",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 18,
+        "sample_size": 18,
+        "wins": 1,
+        "losses": 17,
+        "win_rate": null,
+        "raw_win_rate": 5.56,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -1.19,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "EUR/CAD",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 5,
+        "sample_size": 5,
+        "wins": 0,
+        "losses": 5,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -65.39,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "EUR/CAD",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 23,
+        "sample_size": 23,
+        "wins": 1,
+        "losses": 22,
+        "win_rate": null,
+        "raw_win_rate": 4.35,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -66.58,
+        "insufficient_data": true
+      }
+    }
+  },
+  "NZD/CAD": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "NZD/CAD",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 2,
+        "sample_size": 2,
+        "wins": 2,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 52.6,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "NZD/CAD",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 12.92,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "NZD/CAD",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 9,
+        "sample_size": 9,
+        "wins": 0,
+        "losses": 9,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -340.77,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "NZD/CAD",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 12,
+        "sample_size": 12,
+        "wins": 3,
+        "losses": 9,
+        "win_rate": null,
+        "raw_win_rate": 25.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.19,
+        "net_pnl": -275.25,
+        "insufficient_data": true
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "NZD/CAD",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 71,
+        "sample_size": 71,
+        "wins": 20,
+        "losses": 51,
+        "win_rate": 28.17,
+        "raw_win_rate": 28.17,
+        "profit_factor": 0.25,
+        "raw_profit_factor": 0.25,
+        "net_pnl": -816.36,
+        "insufficient_data": false
+      },
+      "TRENDING_DOWN": {
+        "pair": "NZD/CAD",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 77,
+        "sample_size": 77,
+        "wins": 29,
+        "losses": 48,
+        "win_rate": 37.66,
+        "raw_win_rate": 37.66,
+        "profit_factor": 0.26,
+        "raw_profit_factor": 0.26,
+        "net_pnl": -692.11,
+        "insufficient_data": false
+      },
+      "RANGING": {
+        "pair": "NZD/CAD",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 23,
+        "sample_size": 23,
+        "wins": 11,
+        "losses": 12,
+        "win_rate": null,
+        "raw_win_rate": 47.83,
+        "profit_factor": null,
+        "raw_profit_factor": 0.55,
+        "net_pnl": -95.48,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "NZD/CAD",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 171,
+        "sample_size": 171,
+        "wins": 60,
+        "losses": 111,
+        "win_rate": 35.09,
+        "raw_win_rate": 35.09,
+        "profit_factor": 0.28,
+        "raw_profit_factor": 0.28,
+        "net_pnl": -1603.95,
+        "insufficient_data": false
+      }
+    }
+  }
+};
+    const PAIR_GROUPS = [
+  {
+    "name": "Crypto (Binance)",
+    "pairs": [
+      {
+        "symbol": "BTC/USDT",
+        "name": "Bitcoin",
+        "base": "BTC",
+        "quote": "USDT",
+        "enabled": true,
+        "status_label": "N=545 trades",
+        "is_forex": false
+      },
+      {
+        "symbol": "ETH/USDT",
+        "name": "Ethereum",
+        "base": "ETH",
+        "quote": "USDT",
+        "enabled": false,
+        "status_label": "Untested",
+        "is_forex": false
+      },
+      {
+        "symbol": "SOL/USDT",
+        "name": "Solana",
+        "base": "SOL",
+        "quote": "USDT",
+        "enabled": false,
+        "status_label": "Untested",
+        "is_forex": false
+      },
+      {
+        "symbol": "BNB/USDT",
+        "name": "BNB",
+        "base": "BNB",
+        "quote": "USDT",
+        "enabled": false,
+        "status_label": "Untested",
+        "is_forex": false
+      },
+      {
+        "symbol": "XRP/USDT",
+        "name": "XRP",
+        "base": "XRP",
+        "quote": "USDT",
+        "enabled": false,
+        "status_label": "Untested",
+        "is_forex": false
+      },
+      {
+        "symbol": "DOGE/USDT",
+        "name": "Dogecoin",
+        "base": "DOGE",
+        "quote": "USDT",
+        "enabled": false,
+        "status_label": "Untested",
+        "is_forex": false
+      },
+      {
+        "symbol": "ADA/USDT",
+        "name": "Cardano",
+        "base": "ADA",
+        "quote": "USDT",
+        "enabled": false,
+        "status_label": "Untested",
+        "is_forex": false
+      },
+      {
+        "symbol": "AVAX/USDT",
+        "name": "Avalanche",
+        "base": "AVAX",
+        "quote": "USDT",
+        "enabled": false,
+        "status_label": "Untested",
+        "is_forex": false
+      }
+    ]
+  },
+  {
+    "name": "Forex (Live Market)",
+    "pairs": [
+      {
+        "symbol": "EUR/USD",
+        "name": "Euro / US Dollar",
+        "base": "EUR",
+        "quote": "USD",
+        "enabled": true,
+        "status_label": "N=74 trades",
+        "is_forex": true
+      },
+      {
+        "symbol": "GBP/JPY",
+        "name": "British Pound / Japanese Yen",
+        "base": "GBP",
+        "quote": "JPY",
+        "enabled": true,
+        "status_label": "N=200 trades",
+        "is_forex": true
+      },
+      {
+        "symbol": "AUD/CAD",
+        "name": "Australian Dollar / Canadian Dollar",
+        "base": "AUD",
+        "quote": "CAD",
+        "enabled": true,
+        "status_label": "N=160 trades",
+        "is_forex": true
+      },
+      {
+        "symbol": "NZD/CHF",
+        "name": "New Zealand Dollar / Swiss Franc",
+        "base": "NZD",
+        "quote": "CHF",
+        "enabled": true,
+        "status_label": "N=428 trades",
+        "is_forex": true
+      },
+      {
+        "symbol": "USD/COP",
+        "name": "US Dollar / Colombian Peso",
+        "base": "USD",
+        "quote": "COP",
+        "enabled": true,
+        "status_label": "N=117 trades",
+        "is_forex": true
+      },
+      {
+        "symbol": "GBP/AUD",
+        "name": "British Pound / Australian Dollar",
+        "base": "GBP",
+        "quote": "AUD",
+        "enabled": false,
+        "status_label": "N=3 (< 30)",
+        "is_forex": true
+      },
+      {
+        "symbol": "EUR/CAD",
+        "name": "Euro / Canadian Dollar",
+        "base": "EUR",
+        "quote": "CAD",
+        "enabled": false,
+        "status_label": "N=28 (< 30)",
+        "is_forex": true
+      },
+      {
+        "symbol": "NZD/CAD",
+        "name": "New Zealand Dollar / Canadian Dollar",
+        "base": "NZD",
+        "quote": "CAD",
+        "enabled": true,
+        "status_label": "N=171 trades",
+        "is_forex": true
+      }
+    ]
+  }
+];
+    const SNAPSHOT_TIMESTAMP = "2026-09-19 13:57:15 UTC";
+    const MIN_CONFIDENCE_TRADES = 30;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      let currentSymbol = "BTC/USDT";
+      let currentTimeframe = "1h";
+      let currentRegime = "COMBINED";
+
+      // DOM Elements
+      const pairContainer = document.getElementById("pairContainer");
+      const timeframeButtons = document.querySelectorAll(".tf-btn");
+      const regimeContainer = document.getElementById("regimeContainer");
+
+      const displaySymbolEl = document.getElementById("displaySymbol");
+      const displayTimeframeEl = document.getElementById("displayTimeframe");
+      const dataSourceBadgeEl = document.getElementById("dataSourceBadge");
+      const displayPriceEl = document.getElementById("displayPrice");
+      const signalTextEl = document.getElementById("signalText");
+      const ruleSetTextEl = document.getElementById("ruleSetText");
+      const regimeBadgeEl = document.getElementById("regimeBadge");
+      const macroTrendTextEl = document.getElementById("macroTrendText");
+
+      const regimeTagLabelEl = document.getElementById("regimeTagLabel");
+      const regimeDescriptionEl = document.getElementById("regimeDescription");
+
+      const winRateValueEl = document.getElementById("winRateValue");
+      const winRateBarEl = document.getElementById("winRateBar");
+      const insufficientDataAlertEl = document.getElementById("insufficientDataAlert");
+      const profitFactorValueEl = document.getElementById("profitFactorValue");
+      const sampleSizeValueEl = document.getElementById("sampleSizeValue");
+      const sampleConfidenceLabelEl = document.getElementById("sampleConfidenceLabel");
+      const recordValueEl = document.getElementById("recordValue");
+      const netPnlValueEl = document.getElementById("netPnlValue");
+      const regimeBreakdownBody = document.getElementById("regimeBreakdownBody");
+
+      function init() {
+        setupTimeframeListeners();
+        renderPairs();
+        updateTimeframeAvailability();
+        renderRegimes();
+        renderActiveView();
+
+        // Register Service Worker for PWA Builder compatibility
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+      }
+
+      function renderPairs() {
+        pairContainer.innerHTML = "";
+        const groupsWrapper = document.createElement("div");
+        groupsWrapper.className = "pair-groups-container";
+
+        PAIR_GROUPS.forEach((grp) => {
+          const grpEl = document.createElement("div");
+          grpEl.className = "pair-group";
+
+          const titleEl = document.createElement("div");
+          titleEl.className = "group-title";
+          titleEl.textContent = grp.name;
+          grpEl.appendChild(titleEl);
+
+          const chipsEl = document.createElement("div");
+          chipsEl.className = "group-chips";
+
+          grp.pairs.forEach((p) => {
+            const chip = document.createElement("div");
+            chip.className = `chip ${p.enabled ? "" : "disabled"} ${p.symbol === currentSymbol ? "active" : ""}`;
+            chip.dataset.symbol = p.symbol;
+
+            const label = document.createElement("span");
+            label.textContent = p.symbol;
+            chip.appendChild(label);
+
+            const statusTag = document.createElement("span");
+            statusTag.className = `chip-status-tag ${p.enabled ? "tested" : "untested"}`;
+            statusTag.textContent = p.status_label;
+            chip.appendChild(statusTag);
+
+            if (p.enabled) {
+              chip.addEventListener("click", () => {
+                if (currentSymbol === p.symbol) return;
+                document.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
+                chip.classList.add("active");
+                currentSymbol = p.symbol;
+                
+                // Adjust timeframe if current pair doesn't support current timeframe
+                const supportedTfs = Object.keys(BACKTEST_CACHE[currentSymbol] || {});
+                if (supportedTfs.length > 0 && !supportedTfs.includes(currentTimeframe)) {
+                  currentTimeframe = supportedTfs.includes("1h") ? "1h" : supportedTfs[0];
+                  timeframeButtons.forEach((b) => {
+                    b.classList.toggle("active", b.dataset.tf === currentTimeframe);
+                  });
+                }
+
+                currentRegime = "COMBINED";
+                updateTimeframeAvailability();
+                renderRegimes();
+                renderActiveView();
+              });
+            } else {
+              chip.title = "Untested or insufficient completed trades (< 30).";
+            }
+
+            chipsEl.appendChild(chip);
+          });
+
+          grpEl.appendChild(chipsEl);
+          groupsWrapper.appendChild(grpEl);
+        });
+
+        pairContainer.appendChild(groupsWrapper);
+      }
+
+      function setupTimeframeListeners() {
+        timeframeButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const tf = btn.dataset.tf;
+            if (currentTimeframe === tf) return;
+
+            timeframeButtons.forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentTimeframe = tf;
+            currentRegime = "COMBINED";
+            renderRegimes();
+            renderActiveView();
+          });
+        });
+      }
+
+      function updateTimeframeAvailability() {
+        const pairData = BACKTEST_CACHE[currentSymbol] || {};
+        timeframeButtons.forEach((btn) => {
+          const tf = btn.dataset.tf;
+          const hasData = Boolean(pairData[tf]);
+          if (!hasData) {
+            btn.style.opacity = "0.4";
+            btn.title = "No cached simulation for this timeframe";
+          } else {
+            btn.style.opacity = "1";
+            btn.title = `Simulated data available for ${tf}`;
+          }
+        });
+      }
+
+      function renderRegimes() {
+        regimeContainer.innerHTML = "";
+        const tfData = (BACKTEST_CACHE[currentSymbol] && BACKTEST_CACHE[currentSymbol][currentTimeframe]) || {};
+
+        const regimeOrder = ["COMBINED", "TRENDING_UP", "TRENDING_DOWN", "RANGING", "HIGH_VOLATILITY"];
+        const regimeLabels = {
+          "COMBINED": "All Regimes (Combined)",
+          "TRENDING_UP": "Trending Up (Longs)",
+          "TRENDING_DOWN": "Trending Down (Shorts)",
+          "RANGING": "Ranging (Mean-Reversion)",
+          "HIGH_VOLATILITY": "High Volatility (Filtered)"
+        };
+
+        regimeOrder.forEach((rKey) => {
+          const stat = tfData[rKey];
+          if (!stat && rKey !== "COMBINED") return;
+
+          const btn = document.createElement("button");
+          btn.className = `regime-btn ${currentRegime === rKey ? "active" : ""}`;
+          btn.dataset.regime = rKey;
+
+          const nameSpan = document.createElement("span");
+          nameSpan.textContent = regimeLabels[rKey] || rKey;
+          btn.appendChild(nameSpan);
+
+          if (stat) {
+            const countSpan = document.createElement("span");
+            countSpan.className = "regime-count";
+            countSpan.textContent = `N=${stat.trades}`;
+            btn.appendChild(countSpan);
+          }
+
+          btn.addEventListener("click", () => {
+            document.querySelectorAll(".regime-btn").forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentRegime = rKey;
+            renderActiveView();
+          });
+
+          regimeContainer.appendChild(btn);
+        });
+      }
+
+      function renderActiveView() {
+        const pairData = BACKTEST_CACHE[currentSymbol] || {};
+        const tfData = pairData[currentTimeframe] || null;
+
+        // Is Forex Check
+        let isForex = false;
+        PAIR_GROUPS.forEach((g) => {
+          g.pairs.forEach((p) => {
+            if (p.symbol === currentSymbol && p.is_forex) isForex = true;
+          });
+        });
+
+        displaySymbolEl.textContent = currentSymbol;
+        displayTimeframeEl.textContent = currentTimeframe;
+
+        if (isForex) {
+          dataSourceBadgeEl.textContent = "Static Snapshot — Yahoo Finance";
+          dataSourceBadgeEl.className = "source-tag forex";
+        } else {
+          dataSourceBadgeEl.textContent = "Static Snapshot — Binance";
+          dataSourceBadgeEl.className = "source-tag crypto";
+        }
+
+        signalTextEl.textContent = currentRegime;
+        ruleSetTextEl.textContent = currentRegime === "COMBINED" ? "Aggregated Strategy Performance" : `Isolated Regime: ${currentRegime}`;
+        regimeTagLabelEl.textContent = `${currentSymbol} • ${currentTimeframe} • ${currentRegime}`;
+
+        if (!tfData) {
+          displayPriceEl.textContent = "No Data For Timeframe";
+          regimeBadgeEl.textContent = "UNTESTED";
+          macroTrendTextEl.textContent = `Macro Filter: ${currentSymbol} not tested on ${currentTimeframe}`;
+
+          winRateValueEl.textContent = "No Data";
+          winRateValueEl.style.color = "var(--text-muted)";
+          winRateBarEl.style.width = "0%";
+          insufficientDataAlertEl.classList.remove("hidden");
+          insufficientDataAlertEl.querySelector("strong").textContent = `No backtest data recorded for ${currentSymbol} on ${currentTimeframe}.`;
+          insufficientDataAlertEl.querySelector("p").textContent = "Try selecting 1h or 4h intervals where walk-forward simulations were executed.";
+
+          profitFactorValueEl.textContent = "--";
+          sampleSizeValueEl.textContent = "n = 0";
+          sampleConfidenceLabelEl.textContent = "No simulation recorded";
+          recordValueEl.textContent = "--";
+          netPnlValueEl.textContent = "--";
+
+          regimeBreakdownBody.innerHTML = '<tr><td colspan="6" class="empty-state-notice">No simulation records for this timeframe.</td></tr>';
+          return;
+        }
+
+        regimeDescriptionEl.textContent = `Empirical walk-forward metrics for ${currentSymbol} on ${currentTimeframe} interval (${currentRegime} condition).`;
+        const stat = tfData[currentRegime] || tfData["COMBINED"];
+
+        if (!stat) return;
+
+        const isInsufficient = stat.insufficient_data;
+        displayPriceEl.textContent = `${stat.trades} Completed Trades`;
+
+        if (isInsufficient) {
+          regimeBadgeEl.textContent = `INSUFFICIENT (N=${stat.sample_size})`;
+          regimeBadgeEl.style.color = "var(--color-danger)";
+
+          winRateValueEl.textContent = "Low Data";
+          winRateValueEl.style.color = "var(--text-muted)";
+          winRateBarEl.style.width = "0%";
+          winRateBarEl.classList.remove("profitable");
+          insufficientDataAlertEl.classList.remove("hidden");
+          insufficientDataAlertEl.querySelector("strong").textContent = "Insufficient data — not enough completed trades yet.";
+          insufficientDataAlertEl.querySelector("p").textContent = `Empirical sample size (n = ${stat.sample_size}) is below the mandatory 30-trade statistical confidence threshold. Win rate and profit factor are withheld to prevent misleading estimation.`;
+
+          profitFactorValueEl.textContent = "Low Data";
+          profitFactorValueEl.style.color = "var(--text-muted)";
+
+          sampleSizeValueEl.textContent = `n = ${stat.sample_size}`;
+          sampleConfidenceLabelEl.textContent = "< 30 trades (Unreliable)";
+
+          recordValueEl.textContent = "Low Data";
+          netPnlValueEl.textContent = "Low Data";
+        } else {
+          regimeBadgeEl.textContent = `EMPIRICAL (N=${stat.sample_size})`;
+          regimeBadgeEl.style.color = "var(--color-success)";
+
+          insufficientDataAlertEl.classList.add("hidden");
+
+          const wr = stat.win_rate;
+          winRateValueEl.textContent = `${wr.toFixed(1)}%`;
+          winRateValueEl.style.color = wr >= 50.0 ? "var(--color-success)" : "var(--text-primary)";
+
+          winRateBarEl.style.width = `${Math.min(100, Math.max(0, wr))}%`;
+          if (wr >= 50.0) {
+            winRateBarEl.classList.add("profitable");
+          } else {
+            winRateBarEl.classList.remove("profitable");
+          }
+
+          const pf = stat.profit_factor;
+          profitFactorValueEl.textContent = pf.toFixed(2);
+          profitFactorValueEl.style.color = pf >= 1.5 ? "var(--color-success)" : (pf >= 1.0 ? "var(--color-warning)" : "var(--color-danger)");
+
+          sampleSizeValueEl.textContent = `n = ${stat.sample_size}`;
+          sampleConfidenceLabelEl.textContent = "Empirical Data (N >= 30)";
+
+          recordValueEl.textContent = `${stat.wins}W / ${stat.losses}L`;
+
+          const pnlSign = stat.net_pnl >= 0 ? "+" : "";
+          netPnlValueEl.textContent = `${pnlSign}$${stat.net_pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          netPnlValueEl.style.color = stat.net_pnl >= 0 ? "var(--color-success)" : "var(--color-danger)";
+        }
+
+        // Render Regime Breakdown Table
+        renderBreakdownTable(tfData);
+      }
+
+      function renderBreakdownTable(tfData) {
+        regimeBreakdownBody.innerHTML = "";
+        const keys = ["COMBINED", "TRENDING_UP", "TRENDING_DOWN", "RANGING", "HIGH_VOLATILITY"];
+        const titles = {
+          "COMBINED": "All Regimes (Total)",
+          "TRENDING_UP": "TRENDING_UP (Longs)",
+          "TRENDING_DOWN": "TRENDING_DOWN (Shorts)",
+          "RANGING": "RANGING (Mean-Reversion)",
+          "HIGH_VOLATILITY": "HIGH_VOLATILITY (Circuit Breaker)"
+        };
+
+        keys.forEach((key) => {
+          const item = tfData[key];
+          if (!item && key !== "COMBINED") return;
+
+          const tr = document.createElement("tr");
+          if (key === currentRegime) tr.className = "active-row";
+
+          const tdRegime = document.createElement("td");
+          tdRegime.textContent = titles[key] || key;
+          tr.appendChild(tdRegime);
+
+          const tdTrades = document.createElement("td");
+          tdTrades.textContent = item ? item.trades : 0;
+          tr.appendChild(tdTrades);
+
+          const tdWr = document.createElement("td");
+          if (!item || item.trades === 0) {
+            tdWr.textContent = "--";
+          } else if (item.insufficient_data) {
+            tdWr.textContent = "Low Data";
+            tdWr.style.color = "var(--text-muted)";
+          } else {
+            tdWr.textContent = `${item.win_rate.toFixed(1)}%`;
+            tdWr.style.color = item.win_rate >= 50 ? "var(--color-success)" : "var(--text-primary)";
+          }
+          tr.appendChild(tdWr);
+
+          const tdPf = document.createElement("td");
+          if (!item || item.trades === 0) {
+            tdPf.textContent = "--";
+          } else if (item.insufficient_data) {
+            tdPf.textContent = "Low Data";
+            tdPf.style.color = "var(--text-muted)";
+          } else {
+            tdPf.textContent = item.profit_factor.toFixed(2);
+            tdPf.style.color = item.profit_factor >= 1.5 ? "var(--color-success)" : (item.profit_factor >= 1.0 ? "var(--color-warning)" : "var(--color-danger)");
+          }
+          tr.appendChild(tdPf);
+
+          const tdPnl = document.createElement("td");
+          if (!item || item.trades === 0) {
+            tdPnl.textContent = "$0.00";
+          } else {
+            const sign = item.net_pnl >= 0 ? "+" : "";
+            tdPnl.textContent = `${sign}$${item.net_pnl.toFixed(2)}`;
+            tdPnl.style.color = item.net_pnl >= 0 ? "var(--color-success)" : "var(--color-danger)";
+          }
+          tr.appendChild(tdPnl);
+
+          const tdStatus = document.createElement("td");
+          const pill = document.createElement("span");
+          if (!item || item.trades === 0) {
+            pill.className = "status-pill insufficient";
+            pill.textContent = "No Trades";
+          } else if (item.insufficient_data) {
+            pill.className = "status-pill insufficient";
+            pill.textContent = `N < 30 (${item.trades})`;
+          } else {
+            pill.className = "status-pill valid";
+            pill.textContent = `Valid (N=${item.trades})`;
+          }
+          tdStatus.appendChild(pill);
+          tr.appendChild(tdStatus);
+
+          tr.addEventListener("click", () => {
+            currentRegime = key;
+            document.querySelectorAll(".regime-btn").forEach((b) => {
+              b.classList.toggle("active", b.dataset.regime === key);
+            });
+            renderActiveView();
+          });
+
+          regimeBreakdownBody.appendChild(tr);
+        });
+      }
+
+      // Launch application
+      init();
+    });
+  </script>
+</body>
+</html>

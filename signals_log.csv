@@ -1,0 +1,3 @@
+timestamp,symbol,direction,regime,entry,stop_loss,take_profit,historical_win_rate,historical_profit_factor
+2026-09-18 13:00:00 UTC,BTC/USDT,LONG,TRENDING_UP,78011.99,77315.35,79056.95,15.98%,0.11
+2026-03-26 17:00:00 UTC,BTC/USDT,LONG,RANGING,68486.86,67734.39,69239.33,19.37%,0.11
