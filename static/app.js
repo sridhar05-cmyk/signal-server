@@ -4,7 +4,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
-  let currentSymbol = "BTC/USDT";
+  let currentSymbol = "EUR/USD";
   let currentTimeframe = "1h";
   let isFetching = false;
 
@@ -23,6 +23,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const ruleSetTextEl = document.getElementById("ruleSetText");
   const regimeBadgeEl = document.getElementById("regimeBadge");
   const macroTrendTextEl = document.getElementById("macroTrendText");
+  const sessionBadgeEl = document.getElementById("sessionBadge");
+  const confidenceScoreValEl = document.getElementById("confidenceScoreVal");
+  const confidenceTierValEl = document.getElementById("confidenceTierVal");
 
   // Backtest Elements
   const winRateValueEl = document.getElementById("winRateValue");
@@ -51,6 +54,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const levelEntryEl = document.getElementById("levelEntry");
   const levelSlEl = document.getElementById("levelSl");
   const levelTpEl = document.getElementById("levelTp");
+  const levelSlPipsEl = document.getElementById("levelSlPips");
+  const levelTpPipsEl = document.getElementById("levelTpPips");
+  const confidenceFactorsListEl = document.getElementById("confidenceFactorsList");
 
   /**
    * Initializes the application by fetching supported pairs from /api/pairs.
@@ -237,11 +243,16 @@ document.addEventListener("DOMContentLoaded", () => {
     displayPriceEl.textContent = formatPriceStr(data.indicators.price, isForex);
     lastUpdatedEl.textContent = `Updated: ${data.timestamp}`;
 
-    // Data Source Tag
+    // Data Source Tag & Session Tag
     const dataSourceBadgeEl = document.getElementById("dataSourceBadge");
     if (dataSourceBadgeEl && data.data_source) {
       dataSourceBadgeEl.textContent = data.data_source;
       dataSourceBadgeEl.className = `source-tag ${isForex ? "forex" : "crypto"}`;
+    }
+
+    if (sessionBadgeEl && data.session) {
+      sessionBadgeEl.textContent = `SESSION: ${data.session.name}`;
+      sessionBadgeEl.className = `session-tag ${data.session.is_active_liquidity ? "active-session" : (data.session.is_rollover ? "rollover-session" : "quiet-session")}`;
     }
 
     // Signal Badge
@@ -263,6 +274,15 @@ document.addEventListener("DOMContentLoaded", () => {
     regimeBadgeEl.textContent = data.regime;
     macroTrendTextEl.textContent = `Macro Trend: ${data.macro_htf_trend} (4h 200 EMA)`;
 
+    // Confidence Score Pill
+    if (data.confidence) {
+      if (confidenceScoreValEl) confidenceScoreValEl.textContent = data.confidence.score;
+      if (confidenceTierValEl) {
+        confidenceTierValEl.textContent = `(${data.confidence.tier})`;
+        confidenceTierValEl.className = `conf-tier tier-${data.confidence.tier.toLowerCase()}`;
+      }
+    }
+
     // =========================================================================
     // Empirical Backtest Section (Strict Confidence Enforcement)
     // =========================================================================
@@ -270,17 +290,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (bt.insufficient_data) {
       // Below 30 trades: Enforce honest "Insufficient data" notification
-      winRateValueEl.textContent = "Low Data";
+      winRateValueEl.textContent = bt.overall_win_rate ? `${bt.overall_win_rate.toFixed(1)}%*` : "Low Data";
       winRateValueEl.style.color = "var(--text-muted)";
-      winRateBarEl.style.width = "0%";
+      winRateBarEl.style.width = bt.overall_win_rate ? `${Math.min(100, Math.max(0, bt.overall_win_rate))}%` : "0%";
       winRateBarEl.classList.remove("profitable");
       insufficientDataAlertEl.classList.remove("hidden");
 
-      profitFactorValueEl.textContent = "Low Data";
+      profitFactorValueEl.textContent = bt.overall_profit_factor ? `${bt.overall_profit_factor.toFixed(2)}*` : "Low Data";
       profitFactorValueEl.style.color = "var(--text-muted)";
 
       sampleSizeValueEl.textContent = `n = ${bt.sample_size}`;
-      sampleConfidenceLabelEl.textContent = "< 30 trades (Unreliable)";
+      sampleConfidenceLabelEl.textContent = bt.overall_trades ? `Total Pair Trades: N=${bt.overall_trades}` : "< 30 trades (Unreliable)";
 
       recordValueEl.textContent = "Low Data";
       netPnlValueEl.textContent = "Low Data";
@@ -353,6 +373,37 @@ document.addEventListener("DOMContentLoaded", () => {
     levelEntryEl.textContent = formatPriceStr(data.suggested_levels.entry, isForex);
     levelSlEl.textContent = formatPriceStr(data.suggested_levels.stop_loss, isForex);
     levelTpEl.textContent = formatPriceStr(data.suggested_levels.take_profit, isForex);
+
+    if (levelSlPipsEl) {
+      levelSlPipsEl.textContent = data.suggested_levels.sl_pips ? `(-${data.suggested_levels.sl_pips} pips)` : "";
+    }
+    if (levelTpPipsEl) {
+      levelTpPipsEl.textContent = data.suggested_levels.tp_pips ? `(+${data.suggested_levels.tp_pips} pips)` : "";
+    }
+
+    // Confidence Factors Breakdown Checklist
+    if (confidenceFactorsListEl) {
+      confidenceFactorsListEl.innerHTML = "";
+      const factors = data.confidence && data.confidence.factors ? data.confidence.factors : [];
+      if (factors.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = data.confidence && data.confidence.summary ? data.confidence.summary : "No checklist factors recorded.";
+        confidenceFactorsListEl.appendChild(li);
+      } else {
+        factors.forEach((f) => {
+          const li = document.createElement("li");
+          li.textContent = f;
+          if (f.startsWith("✓")) {
+            li.className = "factor-passed";
+          } else if (f.startsWith("✗")) {
+            li.className = "factor-failed";
+          } else {
+            li.className = "factor-neutral";
+          }
+          confidenceFactorsListEl.appendChild(li);
+        });
+      }
+    }
   }
 
   // Start the application

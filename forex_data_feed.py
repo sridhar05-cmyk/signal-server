@@ -16,11 +16,13 @@ import yfinance as yf
 try:
     from . import indicators
     from . import data_feed
+    from . import forex_utils
     from .data_feed import attach_higher_timeframe_trend
     from .logger import get_logger
 except ImportError:
     import indicators
     import data_feed
+    import forex_utils
     from data_feed import attach_higher_timeframe_trend
     from logger import get_logger
 
@@ -46,6 +48,7 @@ FOREX_TICKER_MAP: Dict[str, str] = {
     "USD/CHF": "USDCHF=X",
     "AUD/USD": "AUDUSD=X",
     "USD/CAD": "USDCAD=X",
+    "NZD/USD": "NZDUSD=X",
 }
 
 
@@ -169,12 +172,24 @@ def fetch_forex_candles(
             cached_df = pd.read_csv(cache_file)
             if len(cached_df) >= min(count, 50):
                 cached_df["datetime"] = pd.to_datetime(cached_df["datetime"], utc=True)
-                logger.debug(f"Loaded {len(cached_df)} candles for {std_pair} ({timeframe}) from cache {cache_file.name}")
-                return cached_df.tail(count).reset_index(drop=True)
+                clean_cached, _ = forex_utils.validate_forex_dataframe(cached_df, std_pair)
+                if len(clean_cached) >= min(count, 50):
+                    logger.debug(f"Loaded {len(clean_cached)} clean candles for {std_pair} ({timeframe}) from cache {cache_file.name}")
+                    return clean_cached.tail(count).reset_index(drop=True)
         except Exception as exc:
             logger.warning(f"Error reading cache {cache_file.name}: {exc}. Fetching from yfinance.")
 
-    logger.info(f"Fetching {count} live {timeframe} forex candles for {std_pair} ({yf_ticker}) via Yahoo Finance...")
+    is_futures_proxy = False
+    proxy_ticker = ""
+    if timeframe == "1m" and forex_utils.is_futures_proxy_required(std_pair):
+        proxy_ticker = forex_utils.get_futures_proxy_ticker(std_pair)
+        yf_ticker = proxy_ticker
+        is_futures_proxy = True
+        logger.info(f"[{std_pair}] Spot 1M feed synthetic/flat. Utilizing CME Futures Proxy: {proxy_ticker}")
+    elif timeframe == "1m":
+        logger.info(f"[{std_pair}] Utilizing active spot 1M feed: {yf_ticker}")
+    else:
+        logger.info(f"Fetching {count} live {timeframe} forex candles for {std_pair} ({yf_ticker}) via Yahoo Finance...")
 
     # Configure yfinance period and interval
     try:
@@ -220,6 +235,14 @@ def fetch_forex_candles(
             period_str = "7d"
             df_raw = ticker_obj.history(period=period_str, interval="1m")
             df = _format_yf_dataframe(df_raw)
+            if not df.empty:
+                df["is_futures_proxy"] = is_futures_proxy
+                df["proxy_ticker"] = proxy_ticker
+
+        elif timeframe in ("1d", "daily", "D"):
+            period_str = "5y"
+            df_raw = ticker_obj.history(period=period_str, interval="1d")
+            df = _format_yf_dataframe(df_raw)
 
         else:
             period_str = "730d"
@@ -234,8 +257,15 @@ def fetch_forex_candles(
         logger.warning(f"Insufficient or empty data returned for {std_pair} ({yf_ticker}).")
         return pd.DataFrame(columns=STANDARD_COLUMNS)
 
-    # Slice to requested count
-    result_df = df.tail(count).reset_index(drop=True)
+    # Slice and validate clean candle data
+    raw_slice = df.tail(count).reset_index(drop=True)
+    result_df, val_report = forex_utils.validate_forex_dataframe(raw_slice, std_pair, timeframe=timeframe)
+    if not val_report.get("valid", False):
+        logger.warning(f"[{std_pair}] {timeframe} data rejected by validation filter: {val_report.get('reason')}")
+        return pd.DataFrame(columns=STANDARD_COLUMNS)
+
+    if val_report["flat_bars_removed"] > 0:
+        logger.debug(f"[{std_pair}] Removed {val_report['flat_bars_removed']} flat / weekend rollover bars.")
 
     # Save to local cache
     if use_cache and len(result_df) >= 30:
@@ -245,8 +275,10 @@ def fetch_forex_candles(
         except Exception as exc:
             logger.warning(f"Could not write cache file {cache_file.name}: {exc}")
 
-    logger.info(f"Successfully loaded {len(result_df)} live {timeframe} candles for {std_pair} from Yahoo Finance.")
+    proxy_str = f" [Futures Proxy: {proxy_ticker}]" if is_futures_proxy else ""
+    logger.info(f"Successfully loaded {len(result_df)} live {timeframe} candles for {std_pair}{proxy_str} from Yahoo Finance.")
     return result_df
+
 
 
 def fetch_higher_timeframe_forex_data(

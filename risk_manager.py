@@ -139,6 +139,7 @@ class SpotRiskManager:
         account_balance: float,
         entry_price: float,
         stop_loss_price: float,
+        max_leverage: float = 1.0,
     ) -> PositionSizing:
         """
         Calculates position size strictly adhering to:
@@ -147,7 +148,7 @@ class SpotRiskManager:
         Safety Guarantees:
           - Hard capped at <= 2.0% of account equity.
           - Never scales upward after a loss (Anti-Martingale check).
-          - Cannot exceed 100% of available cash on non-leveraged spot.
+          - Constrained by max allowable leverage (1.0x for spot crypto, up to 10-20x for forex margin).
         """
         if entry_price <= 0:
             raise ValueError(f"Invalid entry_price: {entry_price}")
@@ -170,15 +171,16 @@ class SpotRiskManager:
                 # Disallow risk inflation after loss
                 target_dollar_risk = min(target_dollar_risk, self.last_dollar_risk)
 
-        # Asset units to purchase (e.g. BTC)
+        # Asset units to purchase (e.g. BTC or EUR)
         position_units = target_dollar_risk / stop_loss_distance
         total_cost_usdt = position_units * entry_price
 
-        # Spot capital ceiling: Cannot exceed total cash balance (no leverage)
+        # Capital ceiling: Spot crypto capped at 1.0x cash balance; forex permits conservative margin (e.g. 10x)
+        max_position_cost = account_balance * max(1.0, float(max_leverage))
         is_cash_capped = False
-        if total_cost_usdt > account_balance:
+        if total_cost_usdt > max_position_cost:
             is_cash_capped = True
-            total_cost_usdt = account_balance
+            total_cost_usdt = max_position_cost
             position_units = total_cost_usdt / entry_price
             # Actual dollar risk adjusts down if cash constrained
             target_dollar_risk = position_units * stop_loss_distance
@@ -234,7 +236,7 @@ class SpotRiskManager:
 
     def get_stats(self) -> Dict[str, Any]:
         """Returns snapshot of risk parameters and daily performance."""
-        self._check_day_rollover()
+        self.check_date_rollover()
         return {
             "date": str(self.current_date),
             "daily_trades": self.daily_trades,

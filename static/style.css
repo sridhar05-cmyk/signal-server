@@ -718,6 +718,146 @@ body {
   color: #34d399;
 }
 
+.pip-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+/* ==========================================================================
+   Session Tags & Confidence Pill
+   ========================================================================== */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.session-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.04em;
+}
+
+.session-tag.active-session {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.session-tag.rollover-session {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.session-tag.quiet-session {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.confidence-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card-sub);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  margin-top: 6px;
+}
+
+.conf-title {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.conf-denom {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.conf-tier {
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.conf-tier.tier-high {
+  color: #10b981;
+}
+
+.conf-tier.tier-medium {
+  color: #f59e0b;
+}
+
+.conf-tier.tier-low {
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   Confidence Factors Breakdown Box
+   ========================================================================== */
+.confidence-factors-box {
+  margin-top: 14px;
+  background: rgba(10, 13, 20, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+
+.factors-header {
+  margin-bottom: 8px;
+}
+
+.factors-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.factors-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.factors-list li {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.factors-list li.factor-passed {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.factors-list li.factor-failed {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.factors-list li.factor-neutral {
+  color: var(--text-secondary);
+  background: rgba(148, 163, 184, 0.05);
+}
+
 /* ==========================================================================
    Footer
    ========================================================================== */

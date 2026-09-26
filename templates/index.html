@@ -72,14 +72,17 @@
       <div class="result-summary-card">
         <div class="summary-left">
           <div class="pair-timeframe-tag">
-            <span id="displaySymbol">BTC/USDT</span>
+            <span id="displaySymbol">EUR/USD</span>
             <span class="dot-separator">•</span>
             <span id="displayTimeframe">1h</span>
           </div>
-          <div id="dataSourceBadge" class="source-tag">Live market data — Yahoo Finance</div>
+          <div class="tag-row">
+            <span id="dataSourceBadge" class="source-tag">Live market data — Yahoo Finance</span>
+            <span id="sessionBadge" class="session-tag">SESSION: --</span>
+          </div>
           <div class="price-display">
             <span class="price-label">Current Close:</span>
-            <span id="displayPrice" class="price-value">$---.--</span>
+            <span id="displayPrice" class="price-value">1.00000</span>
           </div>
         </div>
 
@@ -89,6 +92,11 @@
             <span id="signalText">NO_SIGNAL</span>
           </div>
           <span id="ruleSetText" class="rule-subtext">Evaluating market...</span>
+          <div id="confidencePill" class="confidence-pill">
+            <span class="conf-title">Confidence:</span>
+            <strong id="confidenceScoreVal">--</strong><span class="conf-denom">/100</span>
+            <span id="confidenceTierVal" class="conf-tier">(--)</span>
+          </div>
         </div>
 
         <div class="summary-right">
@@ -226,9 +234,19 @@
             </div>
             <div class="levels-row">
               <div>Entry: <strong id="levelEntry" class="mono-val">$---.--</strong></div>
-              <div>Stop-Loss: <strong id="levelSl" class="mono-val sl-val">$---.--</strong></div>
-              <div>Take-Profit: <strong id="levelTp" class="mono-val tp-val">$---.--</strong></div>
+              <div>Stop-Loss: <strong id="levelSl" class="mono-val sl-val">$---.--</strong> <span id="levelSlPips" class="pip-tag">(-- pips)</span></div>
+              <div>Take-Profit: <strong id="levelTp" class="mono-val tp-val">$---.--</strong> <span id="levelTpPips" class="pip-tag">(-- pips)</span></div>
             </div>
+          </div>
+
+          <!-- Signal Quality & Confidence Factor Breakdown -->
+          <div class="confidence-factors-box">
+            <div class="factors-header">
+              <span class="factors-title">Signal Quality &amp; Confirmation Checklist</span>
+            </div>
+            <ul id="confidenceFactorsList" class="factors-list">
+              <li>Awaiting signal evaluation...</li>
+            </ul>
           </div>
         </div>
       </div>

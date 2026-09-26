@@ -44,6 +44,9 @@ for p in env_candidates:
 try:
     from . import config
     from . import data_feed
+    from . import forex_data_feed
+    from . import forex_utils
+    from . import forex_sessions
     from . import strategy
     from . import indicators
     from . import regime_detector
@@ -52,6 +55,9 @@ try:
 except ImportError:
     import config
     import data_feed
+    import forex_data_feed
+    import forex_utils
+    import forex_sessions
     import strategy
     import indicators
     import regime_detector
@@ -67,14 +73,16 @@ CACHE_FILE_PATH = DATA_DIR / "backtest_cache.json"
 SIGNALS_CSV_PATH = MODULE_DIR / "multi_tf_signals.csv"
 
 SUPPORTED_TIMEFRAMES: List[str] = ["1m", "5m", "15m", "1h", "4h"]
-DEFAULT_SYMBOL: str = "BTC/USDT"
+DEFAULT_SYMBOL: str = "EUR/USD"
 MIN_TRADES_CONFIDENCE: int = 30
 
 CSV_HEADERS = [
     "timestamp",
     "symbol",
     "timeframe",
+    "session",
     "signal",
+    "confidence_score",
     "regime",
     "rule_set",
     "price",
@@ -83,6 +91,10 @@ CSV_HEADERS = [
     "rsi",
     "macd_hist",
     "bb_position",
+    "suggested_sl",
+    "suggested_tp",
+    "sl_pips",
+    "tp_pips",
     "backtested_win_rate",
     "backtested_profit_factor",
     "confidence",
@@ -213,22 +225,35 @@ def scan_single_timeframe(
 ) -> Dict[str, Any]:
     """
     Scans a single timeframe independently:
-      1. Fetches recent candles.
+      1. Fetches recent candles (Forex via Yahoo Finance or Crypto via Binance).
       2. Merges 4h HTF macro trend without look-ahead bias.
       3. Classifies market regime via regime_detector.py.
       4. Evaluates signal via strategy.generate_signal().
-      5. Gathers indicator snapshot.
+      5. Gathers indicator snapshot with pair-aware pip calculations.
       6. Retrieves empirical backtest metrics for that timeframe + regime.
     """
     if cache is None:
         cache = load_backtest_cache()
 
-    logger.info(f"Scanning {symbol} on {timeframe}...")
-    # Fetch live recent candles (100 candles sufficient for all indicators)
-    df_live = data_feed.fetch_live_candles(symbol=symbol, timeframe=timeframe, count=100)
+    std_symbol = forex_utils.clean_forex_symbol(symbol)
+    is_forex = forex_data_feed.is_forex_symbol(std_symbol)
 
-    # Attach HTF macro trend (4h 200 EMA slope)
-    df_merged = data_feed.attach_higher_timeframe_trend(df_live, df_htf)
+    logger.info(f"Scanning {std_symbol} on {timeframe}...")
+
+    # Fetch live recent candles (100 candles sufficient for all indicators)
+    if is_forex:
+        df_live = forex_data_feed.fetch_forex_candles(pair=std_symbol, timeframe=timeframe, count=100)
+        if df_live is None or df_live.empty or len(df_live) < 25:
+            logger.warning(f"Insufficient live candle data returned for {std_symbol} ({timeframe}). Skipping...")
+            return None
+        df_merged = forex_data_feed.attach_higher_timeframe_trend(df_live, df_htf)
+    else:
+        df_live = data_feed.fetch_live_candles(symbol=std_symbol, timeframe=timeframe, count=100)
+        if df_live is None or df_live.empty or len(df_live) < 25:
+            logger.warning(f"Insufficient live candle data returned for {std_symbol} ({timeframe}). Skipping...")
+            return None
+        df_merged = data_feed.attach_higher_timeframe_trend(df_live, df_htf)
+
     htf_trend_val = str(df_merged["htf_trend"].iloc[-1])
 
     # Detect regime
@@ -240,6 +265,8 @@ def scan_single_timeframe(
         df=df_merged,
         htf_trend=htf_trend_val,
         regime_override=regime_res,
+        pair=std_symbol,
+        timeframe=timeframe,
     )
 
     # Signal mapping
@@ -255,7 +282,7 @@ def scan_single_timeframe(
 
     # Pull backtest track record for this exact timeframe + regime
     wr_str, pf_str, conf_str, raw_stat = get_or_compute_backtest_stats(
-        symbol=symbol,
+        symbol=std_symbol,
         timeframe=timeframe,
         regime=regime_name,
         cache=cache,
@@ -265,11 +292,44 @@ def scan_single_timeframe(
     ts_val = latest_bar["datetime"] if "datetime" in latest_bar else datetime.now(timezone.utc)
     ts_str = ts_val.strftime("%Y-%m-%d %H:%M:%S UTC") if isinstance(ts_val, pd.Timestamp) else str(ts_val)
 
+    # Session classification
+    if is_forex:
+        dt = ts_val.to_pydatetime() if isinstance(ts_val, pd.Timestamp) else (ts_val if isinstance(ts_val, datetime) else datetime.now(timezone.utc))
+        session_label = forex_sessions.classify_session(dt)
+    else:
+        session_label = "24/7 Market"
+
+    # Confidence score
+    conf_obj = decision.confidence
+    if conf_obj:
+        conf_score_str = f"{conf_obj.score}/100 ({conf_obj.tier})"
+        conf_factors = conf_obj.factors
+    else:
+        conf_score_str = "N/A"
+        conf_factors = []
+
+    # Pip calculations for SL / TP
+    pip_size = forex_utils.get_pip_size(std_symbol) if is_forex else 1.0
+    entry_p = decision.entry_price if decision.entry_price > 0 else indicators_snap["price"]
+    sl_p = decision.stop_loss
+    tp_p = decision.take_profit
+
+    if is_forex and pip_size > 0:
+        sl_pips = round(abs(entry_p - sl_p) / pip_size, 1) if sl_p > 0 else 0.0
+        tp_pips = round(abs(tp_p - entry_p) / pip_size, 1) if tp_p > 0 else 0.0
+    else:
+        sl_pips = round(abs(entry_p - sl_p), 2) if sl_p > 0 else 0.0
+        tp_pips = round(abs(tp_p - entry_p), 2) if tp_p > 0 else 0.0
+
     return {
         "timestamp": ts_str,
-        "symbol": symbol,
+        "symbol": std_symbol,
+        "is_forex": is_forex,
         "timeframe": timeframe,
+        "session": session_label,
         "signal": signal_label,
+        "confidence_score": conf_score_str,
+        "confidence_factors": conf_factors,
         "regime": regime_name,
         "rule_set": decision.rule_set,
         "price": indicators_snap["price"],
@@ -278,6 +338,11 @@ def scan_single_timeframe(
         "rsi": indicators_snap["rsi"],
         "macd_hist": indicators_snap["macd_hist"],
         "bb_pos": indicators_snap["bb_pos"],
+        "suggested_entry": entry_p,
+        "suggested_sl": sl_p,
+        "suggested_tp": tp_p,
+        "sl_pips": sl_pips,
+        "tp_pips": tp_pips,
         "win_rate": wr_str,
         "profit_factor": pf_str,
         "confidence": conf_str,
@@ -297,23 +362,32 @@ def init_signals_csv() -> None:
 
 
 def append_scan_results_to_csv(results: List[Dict[str, Any]]) -> None:
-    """Appends snapshot rows for all scanned timeframes to multi_tf_signals.csv."""
+    """Appends snapshot rows for all scanned timeframes to multi_tf_signals.csv with pair-aware precision."""
     init_signals_csv()
     rows = []
     for r in results:
+        is_fx = r.get("is_forex", False)
+        p_fmt = (lambda v: forex_utils.format_price(v, r["symbol"])) if is_fx else (lambda v: f"{v:.2f}")
+
         rows.append([
             r["timestamp"],
             r["symbol"],
             r["timeframe"],
+            r.get("session", "N/A"),
             r["signal"],
+            r.get("confidence_score", "N/A"),
             r["regime"],
             r["rule_set"],
-            f"{r['price']:.2f}",
-            f"{r['ema9']:.2f}",
-            f"{r['ema21']:.2f}",
+            p_fmt(r["price"]),
+            p_fmt(r["ema9"]),
+            p_fmt(r["ema21"]),
             f"{r['rsi']:.2f}",
-            f"{r['macd_hist']:+.4f}",
+            f"{r['macd_hist']:+.5f}" if is_fx else f"{r['macd_hist']:+.4f}",
             r["bb_pos"],
+            p_fmt(r["suggested_sl"]) if r.get("suggested_sl") else "0",
+            p_fmt(r["suggested_tp"]) if r.get("suggested_tp") else "0",
+            f"{r.get('sl_pips', 0.0):.1f}",
+            f"{r.get('tp_pips', 0.0):.1f}",
             r["win_rate"],
             r["profit_factor"],
             r["confidence"],
@@ -335,20 +409,32 @@ def run_multi_timeframe_scan(
     """
     Executes scan across all configured timeframes, prints table, and appends to CSV.
     """
-    print("\n" + "=" * 135)
-    print(f"               MULTI-TIMEFRAME SPOT SIGNAL DASHBOARD - {symbol}")
+    std_symbol = forex_utils.clean_forex_symbol(symbol)
+    is_forex = forex_data_feed.is_forex_symbol(std_symbol)
+
+    print("\n" + "=" * 145)
+    print(f"               MULTI-TIMEFRAME FOREX/SPOT SIGNAL DASHBOARD - {std_symbol}")
     print(f"               Scan Time: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
-    print("=" * 135)
+    print("=" * 145)
 
     # 1. Fetch 4h HTF candles once for macro trend
-    logger.info(f"Fetching 4h macro trend data for {symbol}...")
-    df_htf = data_feed.fetch_higher_timeframe_data(
-        symbol=symbol,
-        timeframe="4h",
-        limit=500,
-        ema_period=200,
-        use_cache=True,
-    )
+    logger.info(f"Fetching 4h macro trend data for {std_symbol}...")
+    if is_forex:
+        df_htf = forex_data_feed.fetch_higher_timeframe_forex_data(
+            pair=std_symbol,
+            timeframe="4h",
+            limit=500,
+            ema_period=200,
+            use_cache=True,
+        )
+    else:
+        df_htf = data_feed.fetch_higher_timeframe_data(
+            symbol=std_symbol,
+            timeframe="4h",
+            limit=500,
+            ema_period=200,
+            use_cache=True,
+        )
 
     # 2. Load shared backtest stats cache
     cache = load_backtest_cache()
@@ -358,38 +444,42 @@ def run_multi_timeframe_scan(
     for tf in timeframes:
         try:
             res = scan_single_timeframe(
-                symbol=symbol,
+                symbol=std_symbol,
                 timeframe=tf,
                 df_htf=df_htf,
                 cache=cache,
             )
-            results.append(res)
+            if res is not None:
+                results.append(res)
         except Exception as exc:
             logger.error(f"Failed scanning timeframe {tf}: {exc}")
 
     # 4. Print clean console table
-    col_tf = 10
-    col_sig = 12
+    col_tf = 8
+    col_sess = 14
+    col_sig = 10
+    col_conf = 18
     col_reg = 16
-    col_wr = 36
-    col_pf = 36
-    col_conf = 36
+    col_wr = 28
+    col_pf = 24
 
     header = (
-        f"{'Timeframe':<{col_tf}} | "
+        f"{'TF':<{col_tf}} | "
+        f"{'Session':<{col_sess}} | "
         f"{'Signal':<{col_sig}} | "
+        f"{'Confidence':<{col_conf}} | "
         f"{'Regime':<{col_reg}} | "
         f"{'Backtested Win Rate':<{col_wr}} | "
-        f"{'Backtested Profit Factor':<{col_pf}} | "
-        f"{'Confidence':<{col_conf}}"
+        f"{'Profit Factor':<{col_pf}}"
     )
     separator = (
         f"{'-'*col_tf}-+-"
+        f"{'-'*col_sess}-+-"
         f"{'-'*col_sig}-+-"
+        f"{'-'*col_conf}-+-"
         f"{'-'*col_reg}-+-"
         f"{'-'*col_wr}-+-"
-        f"{'-'*col_pf}-+-"
-        f"{'-'*col_conf}"
+        f"{'-'*col_pf}"
     )
 
     print(header)
@@ -397,29 +487,37 @@ def run_multi_timeframe_scan(
     for r in results:
         row = (
             f"{r['timeframe']:<{col_tf}} | "
+            f"{r.get('session', 'N/A'):<{col_sess}} | "
             f"{r['signal']:<{col_sig}} | "
+            f"{r.get('confidence_score', 'N/A'):<{col_conf}} | "
             f"{r['regime']:<{col_reg}} | "
             f"{r['win_rate']:<{col_wr}} | "
-            f"{r['profit_factor']:<{col_pf}} | "
-            f"{r['confidence']:<{col_conf}}"
+            f"{r['profit_factor']:<{col_pf}}"
         )
         print(row)
-    print("=" * 135)
+    print("=" * 145)
 
-    # 5. Print indicator snapshot
-    print("\nINDICATOR SNAPSHOT BY TIMEFRAME:")
+    # 5. Print indicator & suggested levels snapshot
+    print("\nINDICATOR & LEVEL SNAPSHOT BY TIMEFRAME:")
     for r in results:
+        is_fx = r.get("is_forex", False)
+        p_fmt = (lambda v: forex_utils.format_price(v, r["symbol"])) if is_fx else (lambda v: f"${v:,.2f}")
+        prefix = "" if is_fx else "$"
+
+        sl_info = f"SL: {p_fmt(r['suggested_sl'])} (-{r.get('sl_pips', 0.0):.1f}p)" if r.get('suggested_sl') else "SL: N/A"
+        tp_info = f"TP: {p_fmt(r['suggested_tp'])} (+{r.get('tp_pips', 0.0):.1f}p)" if r.get('suggested_tp') else "TP: N/A"
+
         print(
-            f"  [{r['timeframe']:>3}] Price: ${r['price']:>10,.2f} | "
-            f"EMA9: ${r['ema9']:>10,.2f} | "
-            f"EMA21: ${r['ema21']:>10,.2f} | "
+            f"  [{r['timeframe']:>3}] Price: {p_fmt(r['price'])} | "
+            f"EMA9: {p_fmt(r['ema9'])} | "
+            f"EMA21: {p_fmt(r['ema21'])} | "
             f"RSI: {r['rsi']:>5.1f} | "
-            f"MACD Hist: {r['macd_hist']:>+8.3f} | "
-            f"BB Pos: {r['bb_pos']}"
+            f"MACD Hist: {r['macd_hist']:>+7.4f} | "
+            f"{sl_info} | {tp_info}"
         )
-    print("-" * 135)
+    print("-" * 145)
     print("[DISCLAIMER] Read-only multi-timeframe observer. Zero orders or executions placed.")
-    print("=" * 135 + "\n")
+    print("=" * 145 + "\n")
 
     # 6. Save results to CSV
     append_scan_results_to_csv(results)

@@ -24,3 +24,29 @@ logs/
 Thumbs.db
 .vscode/
 .idea/
+
+# Large historical data, caches, and runtime state
+data/*.csv
+data/*.json
+!data/backtest_cache.json
+!data/backtest_regime_stats.json
+data/historical/
+data/signals_live_state.json
+data/signals_live_log.csv
+
+# Validation scripts and intermediate research artifacts
+run_phase*.py
+run_entry*.py
+run_exit*.py
+run_final*.py
+run_master*.py
+run_short*.py
+analyze_*.py
+build_phase*.py
+cache_all*.py
+test_1m*.py
+validate_forex*.py
+phase*.md
+FINAL_*.md
+
+

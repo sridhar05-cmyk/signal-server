@@ -1,16 +1,24 @@
 """
-Walk-Forward Historical Backtesting Engine with Adaptive Regime Detection.
-Simulates bar-by-bar execution on historical Binance OHLCV candles (default: 6 months of 1h BTC/USDT).
-Integrates:
-  - Regime detection at every bar (TRENDING_UP, TRENDING_DOWN, RANGING, HIGH_VOLATILITY).
-  - Regime-specific strategy routing (Trend-following vs Mean-reversion vs Volatility skip).
-  - Dynamic multi-stage trailing exits.
-  - Granular performance reporting broken down by market regime.
+Walk-Forward Historical Backtesting Engine for Major Forex Pairs.
+Simulates bar-by-bar execution strictly on closed candles with zero lookahead bias.
+
+Features:
+  - Realistic Forex spread and transaction cost modeling (no artificial crypto fee on forex).
+  - Pair-aware pip/pipette calculation for both JPY and non-JPY major pairs.
+  - Session performance tracking (Asian, London, New York, London/NY Overlap, Rollover).
+  - Market structure and regime-specific performance breakdowns.
+  - Long vs Short directional analytics.
+  - Expectancy ($ and R-multiple) and Max Drawdown tracking.
+  - Chronological walk-forward split (In-Sample training vs Out-of-Sample validation).
+  - Anti-churn cooldown enforcement (eliminates overtrading).
 """
 
 import sys
+import os
 import math
-from typing import Dict, Any, List, Optional
+import json
+from pathlib import Path
+from typing import Dict, Any, List, Optional, Tuple
 import pandas as pd
 import numpy as np
 
@@ -18,6 +26,8 @@ try:
     from . import config
     from . import data_feed
     from . import forex_data_feed
+    from . import forex_utils
+    from . import forex_sessions
     from . import strategy
     from . import risk_manager
     from . import regime_detector
@@ -26,6 +36,8 @@ except ImportError:
     import config
     import data_feed
     import forex_data_feed
+    import forex_utils
+    import forex_sessions
     import strategy
     import risk_manager
     import regime_detector
@@ -33,11 +45,21 @@ except ImportError:
 
 logger = get_logger("backtest")
 
-INITIAL_BALANCE: float = 10000.0        # Starting capital ($10,000 USDT)
-BACKTEST_SYMBOL: str = "BTC/USDT"       # Asset to backtest
+INITIAL_BALANCE: float = 10000.0        # Starting capital ($10,000)
+BACKTEST_SYMBOL: str = "EUR/USD"        # Primary default pair
 BACKTEST_TIMEFRAME: str = "1h"          # 1-hour candles
-CANDLE_COUNT: int = 4320                # 4,320 bars * 1h = 180 days (6 months)
-FEE_RATE: float = 0.001                 # 0.1% Binance spot fee per order
+CANDLE_COUNT: int = 1000                # ~1,000 bars
+CRYPTO_FEE_RATE: float = 0.001          # 0.1% Binance spot fee (crypto only)
+
+MAJOR_FOREX_PAIRS: List[str] = [
+    "EUR/USD",
+    "GBP/USD",
+    "USD/JPY",
+    "USD/CHF",
+    "AUD/USD",
+    "USD/CAD",
+    "NZD/USD",
+]
 
 
 def run_spot_backtest(
@@ -45,60 +67,57 @@ def run_spot_backtest(
     timeframe: str = BACKTEST_TIMEFRAME,
     candle_count: int = CANDLE_COUNT,
     initial_balance: float = INITIAL_BALANCE,
-    fee_rate: float = FEE_RATE,
+    walk_forward_split: float = 0.70,   # 70% In-Sample / 30% Out-of-Sample
 ) -> Dict[str, Any]:
     """
-    Executes walk-forward bar-by-bar backtest with regime detection and regime performance breakdown.
+    Executes walk-forward bar-by-bar backtest with realistic Forex spread and session tracking.
     """
-    print("\n" + "=" * 80)
-    print(" BINANCE SPOT TRADING BOT -- ADAPTIVE REGIME RESEARCH & BACKTEST")
-    print(" Regimes: TRENDING_UP (Pullback Longs) | TRENDING_DOWN (Rally Shorts) | RANGING (Mean-Reversion)")
-    print(" Safety Filter: HIGH_VOLATILITY Circuit Breaker (Entries Skipped)")
-    print("=" * 80)
-    print(f" Initial Capital   : ${initial_balance:,.2f}")
-    print(f" Symbol Tested     : {symbol}")
-    print(f" Timeframe         : {timeframe}")
-    print(f" Requested History : {candle_count} bars (~{candle_count // 24} days / 6 months)")
-    print(f" Exchange Fee Rate : {fee_rate * 100:.2f}% per order")
-    print("-" * 80 + "\n")
-
-    # Determine whether symbol is Forex or Crypto
+    std_symbol = forex_utils.clean_forex_symbol(symbol)
     is_forex = (
-        symbol in forex_data_feed.FOREX_TICKER_MAP
-        or any(curr in symbol for curr in ["EUR", "GBP", "AUD", "NZD", "COP", "CAD", "CHF", "JPY"])
-        and "USDT" not in symbol
+        std_symbol in forex_data_feed.FOREX_TICKER_MAP
+        or any(c in std_symbol for c in ["EUR", "GBP", "AUD", "NZD", "CAD", "CHF", "JPY"])
+        and "USDT" not in std_symbol
     )
 
+    print("\n" + "=" * 85)
+    print(f" {'FOREX' if is_forex else 'CRYPTO'} QUANTITATIVE RESEARCH & WALK-FORWARD BACKTEST")
+    print(f" Pair Tested: {std_symbol} | Timeframe: {timeframe} | Requested Depth: {candle_count} bars")
     if is_forex:
-        print(f"--> [FOREX] Fetching {candle_count} historical {timeframe} candles for {symbol} via Yahoo Finance...")
+        spread_pips = forex_utils.get_pair_spread_pips(std_symbol)
+        pip_val = forex_utils.get_pip_size(std_symbol)
+        print(f" Cost Model : Forex Bid-Ask Spread ({spread_pips:.1f} pips / ~${spread_pips * pip_val:.5f})")
+    else:
+        print(f" Cost Model : Crypto Spot Fee ({CRYPTO_FEE_RATE * 100:.2f}% per order)")
+    print("=" * 85 + "\n")
+
+    # 1. Fetch historical candle data
+    if is_forex:
+        print(f"--> [FOREX] Fetching {candle_count} historical {timeframe} candles for {std_symbol}...")
         df = forex_data_feed.fetch_forex_candles(
-            pair=symbol,
+            pair=std_symbol,
             timeframe=timeframe,
             count=candle_count,
             use_cache=True,
         )
-        print(f"--> [FOREX] Fetching higher-timeframe 4h candles for {symbol} macro trend filter...")
+        print(f"--> [FOREX] Fetching higher-timeframe 4h candles for macro trend filter...")
         df_htf = forex_data_feed.fetch_higher_timeframe_forex_data(
-            pair=symbol,
+            pair=std_symbol,
             timeframe="4h",
             limit=1500,
             ema_period=200,
             use_cache=True,
         )
     else:
-        # 1. Fetch historical candles from Binance public API
-        print(f"--> [CRYPTO] Fetching {candle_count} historical {timeframe} candles for {symbol} via Binance...")
+        print(f"--> [CRYPTO] Fetching {candle_count} historical {timeframe} candles for {std_symbol}...")
         df = data_feed.fetch_historical_candles(
-            symbol=symbol,
+            symbol=std_symbol,
             timeframe=timeframe,
             limit=candle_count,
             use_cache=True,
         )
-
-        # 2. Fetch 4h Higher-Timeframe candles for 200 EMA macro trend filter
-        print("--> [CRYPTO] Fetching higher-timeframe 4h candles for 200 EMA macro trend filter...")
+        print(f"--> [CRYPTO] Fetching higher-timeframe 4h candles for macro trend filter...")
         df_htf = data_feed.fetch_higher_timeframe_data(
-            symbol=symbol,
+            symbol=std_symbol,
             timeframe="4h",
             limit=1500,
             ema_period=200,
@@ -107,6 +126,8 @@ def run_spot_backtest(
 
     # Attach HTF trend strictly without lookahead bias
     df = data_feed.attach_higher_timeframe_trend(df, df_htf)
+    if is_forex:
+        df = forex_sessions.attach_forex_sessions(df)
 
     total_bars = len(df)
     if total_bars < 50:
@@ -115,9 +136,9 @@ def run_spot_backtest(
 
     date_start = df["datetime"].iloc[0].strftime("%Y-%m-%d %H:%M")
     date_end = df["datetime"].iloc[-1].strftime("%Y-%m-%d %H:%M")
-    print(f"--> Loaded {total_bars} candles spanning from {date_start} to {date_end} UTC.\n")
+    print(f"--> Dataset: {total_bars} bars from {date_start} to {date_end} UTC.\n")
 
-    # 3. Initialize Risk Manager and Tracking State
+    # 2. Risk Manager & State Tracking
     spot_risk = risk_manager.SpotRiskManager(
         risk_per_trade_pct=config.RISK_PER_TRADE_PCT,
         daily_max_loss=config.DAILY_MAX_LOSS,
@@ -134,35 +155,43 @@ def run_spot_backtest(
     equity_curve: List[float] = [initial_balance]
     hourly_returns: List[float] = []
 
-    # Regime bar counters
-    regime_bar_counts = {
-        "TRENDING_UP": 0,
-        "TRENDING_DOWN": 0,
-        "RANGING": 0,
-        "HIGH_VOLATILITY": 0,
-    }
+    # Cooldown tracking
+    last_exit_bar = -99
+    last_exit_was_loss = False
 
-    print("--> Commencing adaptive walk-forward simulation bar-by-bar...")
+    # Spread cost in price units
+    half_spread_price = (forex_utils.get_spread_cost_in_price(std_symbol) / 2.0) if is_forex else 0.0
 
-    # 4. Simulation Loop (Warm-up 50 bars for rolling 50-avg indicators)
-    warmup_bars = 50
+    # Walk-forward split index
+    warmup_bars = 45
+    usable_bars = total_bars - warmup_bars
+    split_bar_idx = warmup_bars + int(usable_bars * walk_forward_split)
+
+    print(f"--> Walk-Forward Partition: In-Sample (Bars {warmup_bars}..{split_bar_idx}) | Out-of-Sample (Bars {split_bar_idx}..{total_bars})")
+    print("--> Commencing bar-by-bar simulation...")
+
+    # 3. Simulation Loop
     for i in range(warmup_bars, total_bars):
         curr_bar = df.iloc[i]
-        bar_date = curr_bar["datetime"].date()
+        bar_date = curr_bar["datetime"].date() if "datetime" in curr_bar else None
+        bar_session = curr_bar.get("session", "UNKNOWN")
         window_df = df.iloc[: i + 1]
         prior_balance = current_balance
+        is_oos = (i >= split_bar_idx)
 
         # Detect regime for current bar
         htf_trend_val = str(curr_bar.get("htf_trend", "UP"))
         regime_result = regime_detector.detect_regime(window_df, htf_trend=htf_trend_val)
-        regime_bar_counts[regime_result.regime] = regime_bar_counts.get(regime_result.regime, 0) + 1
 
-        # --- A. CHECK EXIT CONDITIONS IF POSITION IS ACTIVE ---
+        # --- A. CHECK EXIT CONDITIONS IF POSITION ACTIVE ---
         if active_position is not None:
+            active_position["bars_held"] = active_position.get("bars_held", 0) + 1
+
             exit_decision = strategy.evaluate_exit(
                 curr_bar=curr_bar,
                 position=active_position,
                 df_history=window_df,
+                pair=std_symbol,
             )
 
             if exit_decision.should_exit:
@@ -170,28 +199,41 @@ def run_spot_backtest(
                 position_size = active_position["size"]
                 cost_basis = active_position["cost"]
                 direction = active_position["direction"]
+                dollar_risk = active_position.get("dollar_risk", cost_basis * 0.01)
 
-                if direction == "BUY":
-                    gross_pnl = (exit_price - active_position["entry_price"]) * position_size
-                    total_fees = (cost_basis + (exit_price * position_size)) * fee_rate
-                else:  # SHORT
-                    gross_pnl = (active_position["entry_price"] - exit_price) * position_size
-                    total_fees = (cost_basis + (exit_price * position_size)) * fee_rate
+                if is_forex:
+                    # Apply half-spread on exit
+                    eff_exit = (exit_price - half_spread_price) if direction == "BUY" else (exit_price + half_spread_price)
+                    eff_entry = active_position["eff_entry"]
+                    if direction == "BUY":
+                        net_pnl = (eff_exit - eff_entry) * position_size
+                    else:
+                        net_pnl = (eff_entry - eff_exit) * position_size
+                    total_fees = 0.0
+                else:
+                    if direction == "BUY":
+                        gross_pnl = (exit_price - active_position["entry_price"]) * position_size
+                    else:
+                        gross_pnl = (active_position["entry_price"] - exit_price) * position_size
+                    total_fees = (cost_basis + (exit_price * position_size)) * CRYPTO_FEE_RATE
+                    net_pnl = gross_pnl - total_fees
 
-                net_pnl = gross_pnl - total_fees
                 return_pct = (net_pnl / cost_basis) * 100 if cost_basis > 0 else 0.0
+                r_multiple = (net_pnl / dollar_risk) if dollar_risk > 0 else 0.0
 
                 current_balance += net_pnl
-
                 outcome_label = "WIN" if net_pnl > 0 else "LOSS"
+
                 spot_risk.record_trade_result(outcome_label, net_pnl, current_date=bar_date)
 
-                bars_held = i - active_position["entry_bar"]
+                last_exit_bar = i
+                last_exit_was_loss = (net_pnl <= 0)
 
                 trade_record = {
                     "trade_num": len(trades_history) + 1,
                     "direction": direction,
                     "regime": active_position["regime"],
+                    "session": active_position.get("session", bar_session),
                     "rule_set": active_position["rule_set"],
                     "entry_time": active_position["entry_time"],
                     "exit_time": curr_bar["datetime"],
@@ -199,11 +241,14 @@ def run_spot_backtest(
                     "exit_price": exit_price,
                     "size": position_size,
                     "cost": cost_basis,
+                    "dollar_risk": round(dollar_risk, 2),
                     "exit_reason": exit_decision.exit_reason,
                     "outcome": outcome_label,
                     "net_pnl": round(net_pnl, 2),
+                    "r_multiple": round(r_multiple, 2),
                     "return_pct": round(return_pct, 2),
-                    "bars_held": bars_held,
+                    "bars_held": active_position["bars_held"],
+                    "is_oos": is_oos,
                     "balance_after": round(current_balance, 2),
                 }
                 trades_history.append(trade_record)
@@ -211,38 +256,57 @@ def run_spot_backtest(
 
         # --- B. CHECK ENTRY CONDITIONS IF NOT IN A POSITION ---
         if active_position is None:
-            can_enter, risk_reason = spot_risk.can_trade(current_balance, current_date=bar_date)
+            # 1. Anti-churn cooldown check
+            cooldown_bars = 6 if last_exit_was_loss else 4
+            is_cooled_down = (i - last_exit_bar) >= cooldown_bars
 
-            if can_enter:
+            # 2. Risk manager allowance check
+            can_enter_risk, _ = spot_risk.can_trade(current_balance, current_date=bar_date)
+
+            if is_cooled_down and can_enter_risk:
                 entry_decision = strategy.evaluate_entry(
                     df=window_df,
                     htf_trend=htf_trend_val,
                     regime_override=regime_result,
+                    pair=std_symbol,
                 )
 
                 if entry_decision.signal in ("BUY", "SHORT"):
+                    max_lev = 10.0 if is_forex else 1.0
                     sizing = spot_risk.calculate_position_size(
                         account_balance=current_balance,
                         entry_price=entry_decision.entry_price,
                         stop_loss_price=entry_decision.stop_loss,
+                        max_leverage=max_lev,
                     )
 
-                    if sizing.position_size > 0 and sizing.position_value <= current_balance:
+                    if sizing.position_size > 0 and sizing.position_value <= ((current_balance * max_lev) + 0.1):
+                        # Effective entry price accounting for half-spread
+                        market_entry = entry_decision.entry_price
+                        if is_forex:
+                            eff_entry = (market_entry + half_spread_price) if entry_decision.signal == "BUY" else (market_entry - half_spread_price)
+                        else:
+                            eff_entry = market_entry
+
                         active_position = {
                             "direction": entry_decision.signal,
-                            "entry_price": entry_decision.entry_price,
+                            "entry_price": market_entry,
+                            "eff_entry": eff_entry,
                             "size": sizing.position_size,
                             "cost": sizing.position_value,
+                            "dollar_risk": sizing.dollar_risk,
                             "stop_loss": entry_decision.stop_loss,
                             "take_profit": entry_decision.take_profit,
                             "atr": entry_decision.atr_value,
                             "entry_time": curr_bar["datetime"],
                             "entry_bar": i,
+                            "bars_held": 0,
                             "regime": entry_decision.regime,
+                            "session": bar_session,
                             "rule_set": entry_decision.rule_set,
                         }
 
-        # Track Drawdown and Equity Curve
+        # Track Drawdown
         if current_balance > peak_balance:
             peak_balance = current_balance
         dd_dollar = peak_balance - current_balance
@@ -264,22 +328,25 @@ def run_spot_backtest(
         position_size = active_position["size"]
         cost_basis = active_position["cost"]
         direction = active_position["direction"]
+        dollar_risk = active_position.get("dollar_risk", cost_basis * 0.01)
 
-        if direction == "BUY":
-            gross_pnl = (exit_price - active_position["entry_price"]) * position_size
+        if is_forex:
+            eff_exit = (exit_price - half_spread_price) if direction == "BUY" else (exit_price + half_spread_price)
+            eff_entry = active_position["eff_entry"]
+            net_pnl = (eff_exit - eff_entry) * position_size if direction == "BUY" else (eff_entry - eff_exit) * position_size
         else:
-            gross_pnl = (active_position["entry_price"] - exit_price) * position_size
+            gross = (exit_price - active_position["entry_price"]) * position_size if direction == "BUY" else (active_position["entry_price"] - exit_price) * position_size
+            net_pnl = gross - ((cost_basis + (exit_price * position_size)) * CRYPTO_FEE_RATE)
 
-        total_fees = (cost_basis + (exit_price * position_size)) * fee_rate
-        net_pnl = gross_pnl - total_fees
-        return_pct = (net_pnl / cost_basis) * 100 if cost_basis > 0 else 0.0
         current_balance += net_pnl
-
         outcome_label = "WIN" if net_pnl > 0 else "LOSS"
+        r_multiple = (net_pnl / dollar_risk) if dollar_risk > 0 else 0.0
+
         trades_history.append({
             "trade_num": len(trades_history) + 1,
             "direction": direction,
             "regime": active_position["regime"],
+            "session": active_position.get("session", "UNKNOWN"),
             "rule_set": active_position["rule_set"],
             "entry_time": active_position["entry_time"],
             "exit_time": last_bar["datetime"],
@@ -287,169 +354,170 @@ def run_spot_backtest(
             "exit_price": exit_price,
             "size": position_size,
             "cost": cost_basis,
+            "dollar_risk": round(dollar_risk, 2),
             "exit_reason": "BACKTEST_END",
             "outcome": outcome_label,
             "net_pnl": round(net_pnl, 2),
-            "return_pct": round(return_pct, 2),
+            "r_multiple": round(r_multiple, 2),
+            "return_pct": round((net_pnl / cost_basis) * 100, 2),
             "bars_held": total_bars - active_position["entry_bar"],
+            "is_oos": True,
             "balance_after": round(current_balance, 2),
         })
 
     # ==============================================================================
-    # COMPREHENSIVE PERFORMANCE & REGIME BREAKDOWN REPORT
+    # COMPREHENSIVE PERFORMANCE CALCULATIONS
     # ==============================================================================
-    evaluated_bars = total_bars - warmup_bars
-    total_trades = len(trades_history)
-    wins = [t for t in trades_history if t["outcome"] == "WIN"]
-    losses = [t for t in trades_history if t["outcome"] == "LOSS"]
+    def calculate_metrics(trades: List[Dict[str, Any]]) -> Dict[str, Any]:
+        n_trades = len(trades)
+        if n_trades == 0:
+            return {
+                "trades": 0, "win_rate": 0.0, "profit_factor": 0.0,
+                "net_pnl": 0.0, "avg_r": 0.0, "expectancy": 0.0,
+                "avg_win": 0.0, "avg_loss": 0.0, "win_loss_ratio": 0.0,
+            }
+        wins = [t for t in trades if t["outcome"] == "WIN"]
+        losses = [t for t in trades if t["outcome"] == "LOSS"]
+        w_count = len(wins)
+        l_count = len(losses)
+        wr = (w_count / n_trades * 100) if n_trades > 0 else 0.0
 
-    win_count = len(wins)
-    loss_count = len(losses)
-    win_rate = (win_count / total_trades * 100) if total_trades > 0 else 0.0
+        gross_profit = sum(t["net_pnl"] for t in wins)
+        gross_loss = abs(sum(t["net_pnl"] for t in losses))
+        pf = (gross_profit / gross_loss) if gross_loss > 0 else (999.0 if gross_profit > 0 else 0.0)
 
-    gross_profit = sum(t["net_pnl"] for t in wins)
-    gross_loss = abs(sum(t["net_pnl"] for t in losses))
-    profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else (999.0 if gross_profit > 0 else 0.0)
+        net_pnl = sum(t["net_pnl"] for t in trades)
+        avg_r = (sum(t.get("r_multiple", 0.0) for t in trades) / n_trades) if n_trades > 0 else 0.0
+        expectancy = net_pnl / n_trades if n_trades > 0 else 0.0
 
-    avg_win = (gross_profit / win_count) if win_count > 0 else 0.0
-    avg_loss = (gross_loss / loss_count) if loss_count > 0 else 0.0
-    win_loss_ratio = (avg_win / avg_loss) if avg_loss > 0 else 0.0
+        avg_win = (gross_profit / w_count) if w_count > 0 else 0.0
+        avg_loss = (gross_loss / l_count) if l_count > 0 else 0.0
+        wl_ratio = (avg_win / avg_loss) if avg_loss > 0 else 0.0
 
-    net_profit = current_balance - initial_balance
-    roi_pct = (net_profit / initial_balance) * 100
-
-    returns_series = pd.Series(hourly_returns)
-    std_ret = returns_series.std()
-    sharpe_ratio = (returns_series.mean() / std_ret * math.sqrt(8760)) if std_ret > 0 else 0.0
-
-    print("\n" + "=" * 80)
-    print("               ADAPTIVE SPOT BOT PERFORMANCE REPORT")
-    print("=" * 80)
-    print(f" Period Evaluated       : {date_start} to {date_end} UTC ({evaluated_bars} bars)")
-    print(f" Initial Capital        : ${initial_balance:,.2f}")
-    print(f" Final Account Balance  : ${current_balance:,.2f}")
-    print(f" Net Realized Profit/Loss: ${net_profit:+,.2f} ({roi_pct:+.2f}%)")
-    print("-" * 80)
-    print(f" Total Trades Executed  : {total_trades}")
-    print(f" Winning Trades         : {win_count} ({win_rate:.2f}%)")
-    print(f" Losing Trades          : {loss_count} ({100 - win_rate:.2f}%)")
-    print(f" Average Win Size       : ${avg_win:,.2f}")
-    print(f" Average Loss Size      : ${avg_loss:,.2f}")
-    print(f" Win/Loss Size Ratio    : {win_loss_ratio:.2f}:1")
-    print(f" Profit Factor          : {profit_factor:.2f} (Gross Profit / Gross Loss)")
-    print(f" Max Drawdown ($)       : ${max_drawdown_dollar:,.2f}")
-    print(f" Max Drawdown (%)       : {max_drawdown_pct:.2f}%")
-    print(f" Annualized Sharpe Ratio: {sharpe_ratio:.2f}")
-
-    # --- 1. MARKET REGIME TIME ALLOCATION ---
-    print("\n" + "-" * 80)
-    print(" 1. MARKET REGIME ALLOCATION (Time Spent in Each Condition)")
-    print("-" * 80)
-    for reg, count in regime_bar_counts.items():
-        pct = (count / evaluated_bars * 100) if evaluated_bars > 0 else 0.0
-        skip_note = " [SKIPPED - SAFETY FILTER]" if reg == "HIGH_VOLATILITY" else ""
-        print(f"   * {reg:<16}: {count:>4} bars ({pct:>5.1f}%){skip_note}")
-
-    # --- 2. PERFORMANCE BROKEN DOWN BY REGIME ---
-    print("\n" + "-" * 80)
-    print(" 2. PERFORMANCE BREAKDOWN BY REGIME (Where Edge Exists)")
-    print("-" * 80)
-    regimes_to_evaluate = ["TRENDING_UP", "TRENDING_DOWN", "RANGING"]
-
-    regime_stats = {}
-    for reg in regimes_to_evaluate:
-        reg_trades = [t for t in trades_history if t["regime"] == reg]
-        reg_total = len(reg_trades)
-        reg_wins = [t for t in reg_trades if t["outcome"] == "WIN"]
-        reg_losses = [t for t in reg_trades if t["outcome"] == "LOSS"]
-        reg_win_count = len(reg_wins)
-        reg_win_rate = (reg_win_count / reg_total * 100) if reg_total > 0 else 0.0
-
-        reg_gp = sum(t["net_pnl"] for t in reg_wins)
-        reg_gl = abs(sum(t["net_pnl"] for t in reg_losses))
-        reg_pf = (reg_gp / reg_gl) if reg_gl > 0 else (999.0 if reg_gp > 0 else 0.0)
-        reg_net = sum(t["net_pnl"] for t in reg_trades)
-
-        regime_stats[reg] = {
-            "trades": reg_total,
-            "wins": reg_win_count,
-            "losses": len(reg_losses),
-            "win_rate": round(reg_win_rate, 2),
-            "profit_factor": round(reg_pf, 2),
-            "net_pnl": round(reg_net, 2),
+        return {
+            "trades": n_trades,
+            "wins": w_count,
+            "losses": l_count,
+            "win_rate": round(wr, 2),
+            "profit_factor": round(pf, 2),
+            "net_pnl": round(net_pnl, 2),
+            "avg_r": round(avg_r, 2),
+            "expectancy": round(expectancy, 2),
+            "avg_win": round(avg_win, 2),
+            "avg_loss": round(avg_loss, 2),
+            "win_loss_ratio": round(wl_ratio, 2),
         }
 
-        print(f"   [{reg}]")
-        print(f"     Trades Executed : {reg_total}")
-        print(f"     Win Rate        : {reg_win_rate:.2f}% ({reg_win_count}W / {len(reg_losses)}L)")
-        print(f"     Profit Factor   : {reg_pf:.2f}")
-        print(f"     Net P&L         : ${reg_net:+,.2f}")
-        print()
+    overall_metrics = calculate_metrics(trades_history)
+    in_sample_trades = [t for t in trades_history if not t.get("is_oos", False)]
+    out_of_sample_trades = [t for t in trades_history if t.get("is_oos", False)]
+    is_metrics = calculate_metrics(in_sample_trades)
+    oos_metrics = calculate_metrics(out_of_sample_trades)
 
-    # --- 3. EXIT REASON BREAKDOWN ---
-    print("-" * 80)
-    print(" 3. EXIT REASON BREAKDOWN")
-    print("-" * 80)
-    tp_exits = sum(1 for t in trades_history if t["exit_reason"] == "TAKE_PROFIT")
-    trail_exits = sum(1 for t in trades_history if t["exit_reason"] == "TRAILING_STOP")
-    be_exits = sum(1 for t in trades_history if t["exit_reason"] == "BREAKEVEN_STOP")
-    sl_exits = sum(1 for t in trades_history if t["exit_reason"] == "STOP_LOSS")
-    trend_exits = sum(1 for t in trades_history if t["exit_reason"] == "TREND_REVERSAL")
-    end_exits = sum(1 for t in trades_history if t["exit_reason"] == "BACKTEST_END")
+    long_trades = [t for t in trades_history if t["direction"] == "BUY"]
+    short_trades = [t for t in trades_history if t["direction"] == "SHORT"]
+    long_metrics = calculate_metrics(long_trades)
+    short_metrics = calculate_metrics(short_trades)
 
-    print(f"   * Take-Profit Target          : {tp_exits}")
-    print(f"   * Trailing Stop (2x ATR)      : {trail_exits}")
-    print(f"   * Breakeven Stop (1x ATR)     : {be_exits}")
-    print(f"   * Initial Stop-Loss (Risk SL) : {sl_exits}")
-    print(f"   * Trend Reversal Fallback     : {trend_exits}")
-    if end_exits:
-        print(f"   * End of Dataset Exit         : {end_exits}")
-    print("=" * 80)
+    # Regime breakdown
+    regime_stats = {}
+    for reg in ["TRENDING_UP", "TRENDING_DOWN", "RANGING"]:
+        reg_trades = [t for t in trades_history if t["regime"] == reg]
+        regime_stats[reg] = calculate_metrics(reg_trades)
 
-    print("\n" + "!" * 80)
-    print(" [CRITICAL RESEARCH DIRECTIVE]:")
-    print(" \"A profit factor above 1.5 and win rate that beats the risk-reward breakeven")
-    print(" are the minimum bar before considering demo trading.\"")
-    print("!" * 80 + "\n")
+    # Session breakdown
+    session_stats = {}
+    for sess in [
+        forex_sessions.SESSION_LONDON_NY_OVERLAP,
+        forex_sessions.SESSION_LONDON,
+        forex_sessions.SESSION_NEW_YORK,
+        forex_sessions.SESSION_ASIAN,
+        forex_sessions.SESSION_ROLLOVER,
+    ]:
+        sess_trades = [t for t in trades_history if t.get("session") == sess]
+        if sess_trades:
+            session_stats[sess] = calculate_metrics(sess_trades)
+
+    # ==============================================================================
+    # PRINT STRUCTURED REPORT
+    # ==============================================================================
+    print("\n" + "=" * 85)
+    print(f"               PERFORMANCE REPORT: {std_symbol} ({timeframe})")
+    print("=" * 85)
+    print(f" Initial Balance   : ${initial_balance:,.2f} | Final Balance: ${current_balance:,.2f}")
+    print(f" Total Net P&L     : ${overall_metrics['net_pnl']:+,.2f} ({(overall_metrics['net_pnl'] / initial_balance)*100:+.2f}%)")
+    print(f" Max Drawdown      : ${max_drawdown_dollar:,.2f} ({max_drawdown_pct:.2f}%)")
+    print(f" Total Trades      : {overall_metrics['trades']} (Win Rate: {overall_metrics['win_rate']}%)")
+    print(f" Profit Factor     : {overall_metrics['profit_factor']:.2f}")
+    print(f" Expectancy / Trade: ${overall_metrics['expectancy']:+,.2f} ({overall_metrics['avg_r']:+.2f} R)")
+    print(f" Win/Loss Ratio    : {overall_metrics['win_loss_ratio']:.2f}:1 (Avg Win: ${overall_metrics['avg_win']:,.2f} / Avg Loss: ${overall_metrics['avg_loss']:,.2f})")
+    print("-" * 85)
+
+    # --- 1. WALK-FORWARD CHRONOLOGICAL OUT-OF-SAMPLE TEST ---
+    print(" 1. WALK-FORWARD CHRONOLOGICAL VALIDATION (In-Sample vs Out-of-Sample)")
+    print("-" * 85)
+    print(f"   [IN-SAMPLE TRAIN 70%]  : Trades: {is_metrics['trades']:<3} | WR: {is_metrics['win_rate']:>5.1f}% | PF: {is_metrics['profit_factor']:>4.2f} | PnL: ${is_metrics['net_pnl']:>+8.2f} | Avg R: {is_metrics['avg_r']:>+4.2f}R")
+    print(f"   [OUT-OF-SAMPLE TEST 30%]: Trades: {oos_metrics['trades']:<3} | WR: {oos_metrics['win_rate']:>5.1f}% | PF: {oos_metrics['profit_factor']:>4.2f} | PnL: ${oos_metrics['net_pnl']:>+8.2f} | Avg R: {oos_metrics['avg_r']:>+4.2f}R")
+
+    # --- 2. LONG VS SHORT PERFORMANCE ---
+    print("\n" + "-" * 85)
+    print(" 2. DIRECTIONAL PERFORMANCE (Long vs Short)")
+    print("-" * 85)
+    print(f"   [LONG (BUY)]           : Trades: {long_metrics['trades']:<3} | WR: {long_metrics['win_rate']:>5.1f}% | PF: {long_metrics['profit_factor']:>4.2f} | PnL: ${long_metrics['net_pnl']:>+8.2f}")
+    print(f"   [SHORT (SELL)]         : Trades: {short_metrics['trades']:<3} | WR: {short_metrics['win_rate']:>5.1f}% | PF: {short_metrics['profit_factor']:>4.2f} | PnL: ${short_metrics['net_pnl']:>+8.2f}")
+
+    # --- 3. MARKET REGIME PERFORMANCE ---
+    print("\n" + "-" * 85)
+    print(" 3. PERFORMANCE BY MARKET REGIME")
+    print("-" * 85)
+    for reg, stats in regime_stats.items():
+        print(f"   [{reg:<16}] : Trades: {stats['trades']:<3} | WR: {stats['win_rate']:>5.1f}% | PF: {stats['profit_factor']:>4.2f} | PnL: ${stats['net_pnl']:>+8.2f}")
+
+    # --- 4. SESSION PERFORMANCE ---
+    if is_forex and session_stats:
+        print("\n" + "-" * 85)
+        print(" 4. PERFORMANCE BY FOREX SESSION")
+        print("-" * 85)
+        for sess, stats in session_stats.items():
+            print(f"   [{sess:<20}] : Trades: {stats['trades']:<3} | WR: {stats['win_rate']:>5.1f}% | PF: {stats['profit_factor']:>4.2f} | PnL: ${stats['net_pnl']:>+8.2f}")
+
+    # --- 5. EXIT REASON BREAKDOWN ---
+    print("\n" + "-" * 85)
+    print(" 5. EXIT REASON BREAKDOWN")
+    print("-" * 85)
+    for reason in ["TAKE_PROFIT", "TRAILING_STOP", "BREAKEVEN_STOP", "STOP_LOSS", "TREND_REVERSAL", "BACKTEST_END"]:
+        cnt = sum(1 for t in trades_history if t["exit_reason"] == reason)
+        if cnt > 0:
+            print(f"   * {reason:<22}: {cnt} trades")
+    print("=" * 85 + "\n")
 
     return {
-        "symbol": symbol,
+        "symbol": std_symbol,
         "timeframe": timeframe,
         "initial_balance": initial_balance,
         "final_balance": round(current_balance, 2),
-        "net_profit": round(net_profit, 2),
-        "total_trades": total_trades,
-        "win_rate": round(win_rate, 2),
-        "profit_factor": round(profit_factor, 2),
-        "max_drawdown_pct": round(max_drawdown_pct, 2),
-        "regime_bar_counts": regime_bar_counts,
+        "overall": overall_metrics,
+        "in_sample": is_metrics,
+        "out_of_sample": oos_metrics,
+        "long_metrics": long_metrics,
+        "short_metrics": short_metrics,
         "regime_stats": regime_stats,
+        "session_stats": session_stats,
+        "total_trades": overall_metrics["trades"],
+        "win_rate": overall_metrics["win_rate"],
+        "profit_factor": overall_metrics["profit_factor"],
+        "max_drawdown_pct": round(max_drawdown_pct, 2),
     }
 
 
-def run_all_forex_backtests(
-    pairs: Optional[List[str]] = None,
+def run_all_major_forex_backtests(
     timeframes: Optional[List[str]] = None,
     candle_count: int = 1000,
 ) -> Dict[str, Any]:
     """
-    Executes walk-forward backtests across all standard spot forex pairs for 1h and 4h timeframes.
-    Caches results into data/backtest_cache.json and prints a consolidated summary table.
+    Executes walk-forward backtests across all 7 major forex pairs on 1h and 4h timeframes.
+    Persists updated results into data/backtest_cache.json and prints consolidated summary.
     """
-    import json
-    from pathlib import Path
-
-    if pairs is None:
-        pairs = [
-            "EUR/USD",
-            "GBP/JPY",
-            "AUD/CAD",
-            "NZD/CHF",
-            "USD/COP",
-            "GBP/AUD",
-            "EUR/CAD",
-            "NZD/CAD",
-        ]
     if timeframes is None:
         timeframes = ["1h", "4h"]
 
@@ -464,13 +532,13 @@ def run_all_forex_backtests(
 
     summary_rows = []
 
-    print("\n" + "=" * 90)
-    print("      BATCH FOREX SPOT BACKTEST ENGINE (Yahoo Finance Live Data)")
-    print(f"      Pairs Tested: {', '.join(pairs)}")
-    print(f"      Timeframes  : {', '.join(timeframes)}")
-    print("=" * 90 + "\n")
+    print("\n" + "=" * 100)
+    print("               BATCH MAJOR FOREX BACKTEST RUN (7 Major Pairs)")
+    print(f"               Pairs: {', '.join(MAJOR_FOREX_PAIRS)}")
+    print(f"               Timeframes: {', '.join(timeframes)}")
+    print("=" * 100 + "\n")
 
-    for pair in pairs:
+    for pair in MAJOR_FOREX_PAIRS:
         if pair not in cache:
             cache[pair] = {}
 
@@ -478,15 +546,22 @@ def run_all_forex_backtests(
             print(f"\n>>> Running Backtest: {pair} on {tf} ({candle_count} bars)...")
             try:
                 res = run_spot_backtest(symbol=pair, timeframe=tf, candle_count=candle_count)
-                if res and "regime_stats" in res:
+                if res and "overall" in res and res["overall"]["trades"] > 0:
                     cache[pair][tf] = res["regime_stats"]
+                    # Add overall and oos metrics into cache for app consumption
+                    cache[pair][tf]["_overall"] = res["overall"]
+                    cache[pair][tf]["_out_of_sample"] = res["out_of_sample"]
+
                     summary_rows.append({
                         "pair": pair,
                         "timeframe": tf,
-                        "trades": res["total_trades"],
-                        "win_rate": f"{res['win_rate']:.2f}%",
-                        "profit_factor": f"{res['profit_factor']:.2f}",
-                        "net_pnl": f"${res['net_profit']:+,.2f}",
+                        "trades": res["overall"]["trades"],
+                        "win_rate": f"{res['overall']['win_rate']:.1f}%",
+                        "profit_factor": f"{res['overall']['profit_factor']:.2f}",
+                        "oos_trades": res["out_of_sample"]["trades"],
+                        "oos_wr": f"{res['out_of_sample']['win_rate']:.1f}%",
+                        "oos_pf": f"{res['out_of_sample']['profit_factor']:.2f}",
+                        "net_pnl": f"${res['overall']['net_pnl']:+,.2f}",
                     })
                 else:
                     summary_rows.append({
@@ -495,6 +570,9 @@ def run_all_forex_backtests(
                         "trades": 0,
                         "win_rate": "N/A",
                         "profit_factor": "N/A",
+                        "oos_trades": 0,
+                        "oos_wr": "N/A",
+                        "oos_pf": "N/A",
                         "net_pnl": "$0.00",
                     })
             except Exception as exc:
@@ -509,31 +587,31 @@ def run_all_forex_backtests(
         logger.error(f"Failed to write {cache_file.name}: {exc}")
 
     # Print summary table
-    print("\n" + "=" * 90)
-    print("                      FOREX BACKTEST SUMMARY RESULTS TABLE")
-    print("=" * 90)
-    header = f"{'Pair':<12} | {'Timeframe':<10} | {'Trades':<8} | {'Win Rate':<12} | {'Profit Factor':<14} | {'Net PnL':<14}"
-    sep = f"{'-'*12}-+-{'-'*10}-+-{'-'*8}-+-{'-'*12}-+-{'-'*14}-+-{'-'*14}"
+    print("\n" + "=" * 105)
+    print("                     MAJOR FOREX BACKTEST SUMMARY RESULTS TABLE")
+    print("=" * 105)
+    header = f"{'Pair':<10} | {'TF':<4} | {'Trades':<7} | {'Win Rate':<9} | {'PF':<6} | {'OOS N':<6} | {'OOS WR':<8} | {'OOS PF':<7} | {'Net PnL':<12}"
+    sep = f"{'-'*10}-+-{'-'*4}-+-{'-'*7}-+-{'-'*9}-+-{'-'*6}-+-{'-'*6}-+-{'-'*8}-+-{'-'*7}-+-{'-'*12}"
     print(header)
     print(sep)
     for r in summary_rows:
-        print(f"{r['pair']:<12} | {r['timeframe']:<10} | {r['trades']:<8} | {r['win_rate']:<12} | {r['profit_factor']:<14} | {r['net_pnl']:<14}")
-    print("=" * 90 + "\n")
+        print(f"{r['pair']:<10} | {r['timeframe']:<4} | {r['trades']:<7} | {r['win_rate']:<9} | {r['profit_factor']:<6} | {r['oos_trades']:<6} | {r['oos_wr']:<8} | {r['oos_pf']:<7} | {r['net_pnl']:<12}")
+    print("=" * 105 + "\n")
 
     return cache
 
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Spot Bot & Forex Backtest Engine")
-    parser.add_argument("--symbol", type=str, default=BACKTEST_SYMBOL, help="Trading symbol (BTC/USDT, EUR/USD, etc.)")
-    parser.add_argument("--timeframe", type=str, default=BACKTEST_TIMEFRAME, help="Candle interval (1h, 4h, etc.)")
-    parser.add_argument("--count", type=int, default=CANDLE_COUNT, help="Number of bars to backtest")
-    parser.add_argument("--forex-all", action="store_true", help="Run backtests across all 8 forex pairs on 1h and 4h")
+    parser = argparse.ArgumentParser(description="Forex & Spot Bot Backtest Engine")
+    parser.add_argument("--symbol", type=str, default=BACKTEST_SYMBOL, help="Pair (EUR/USD, GBP/USD, etc.)")
+    parser.add_argument("--timeframe", type=str, default=BACKTEST_TIMEFRAME, help="Candle timeframe (1h, 4h)")
+    parser.add_argument("--count", type=int, default=CANDLE_COUNT, help="Number of candles")
+    parser.add_argument("--forex-majors", action="store_true", help="Run backtests across all 7 major forex pairs")
 
     args = parser.parse_args()
 
-    if args.forex_all:
-        run_all_forex_backtests()
+    if args.forex_majors:
+        run_all_major_forex_backtests(candle_count=args.count)
     else:
         run_spot_backtest(symbol=args.symbol, timeframe=args.timeframe, candle_count=args.count)

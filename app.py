@@ -32,6 +32,8 @@ try:
     from . import config
     from . import data_feed
     from . import forex_data_feed
+    from . import forex_utils
+    from . import forex_sessions
     from . import indicators
     from . import regime_detector
     from . import strategy
@@ -40,6 +42,8 @@ except ImportError:
     import config
     import data_feed
     import forex_data_feed
+    import forex_utils
+    import forex_sessions
     import indicators
     import regime_detector
     import strategy
@@ -54,7 +58,7 @@ app = Flask(
 )
 
 SUPPORTED_TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h"]
-DEFAULT_SYMBOL = "BTC/USDT"
+DEFAULT_SYMBOL = "EUR/USD"
 DEFAULT_TIMEFRAME = "1h"
 MIN_CONFIDENCE_TRADES = 30
 
@@ -71,10 +75,15 @@ CRYPTO_SYMBOLS = [
 
 FOREX_SYMBOLS = [
     {"symbol": "EUR/USD", "name": "Euro / US Dollar", "base": "EUR", "quote": "USD"},
+    {"symbol": "GBP/USD", "name": "British Pound / US Dollar", "base": "GBP", "quote": "USD"},
+    {"symbol": "USD/JPY", "name": "US Dollar / Japanese Yen", "base": "USD", "quote": "JPY"},
+    {"symbol": "USD/CHF", "name": "US Dollar / Swiss Franc", "base": "USD", "quote": "CHF"},
+    {"symbol": "AUD/USD", "name": "Australian Dollar / US Dollar", "base": "AUD", "quote": "USD"},
+    {"symbol": "USD/CAD", "name": "US Dollar / Canadian Dollar", "base": "USD", "quote": "CAD"},
+    {"symbol": "NZD/USD", "name": "New Zealand Dollar / US Dollar", "base": "NZD", "quote": "USD"},
     {"symbol": "GBP/JPY", "name": "British Pound / Japanese Yen", "base": "GBP", "quote": "JPY"},
     {"symbol": "AUD/CAD", "name": "Australian Dollar / Canadian Dollar", "base": "AUD", "quote": "CAD"},
     {"symbol": "NZD/CHF", "name": "New Zealand Dollar / Swiss Franc", "base": "NZD", "quote": "CHF"},
-    {"symbol": "USD/COP", "name": "US Dollar / Colombian Peso", "base": "USD", "quote": "COP"},
     {"symbol": "GBP/AUD", "name": "British Pound / Australian Dollar", "base": "GBP", "quote": "AUD"},
     {"symbol": "EUR/CAD", "name": "Euro / Canadian Dollar", "base": "EUR", "quote": "CAD"},
     {"symbol": "NZD/CAD", "name": "New Zealand Dollar / Canadian Dollar", "base": "NZD", "quote": "CAD"},
@@ -260,14 +269,35 @@ def get_signal():
         is_forex = forex_data_feed.is_forex_symbol(symbol)
 
         # 1. Fetch live candles & macro HTF trend according to asset class
+        df_1m_extra = None
+        df_15m_extra = None
+        df_1h_extra = None
+        df_4h_extra = None
+
         if is_forex:
             logger.info(f"API request: Fetching live {timeframe} forex candles for {symbol} via Yahoo Finance...")
             df_live = forex_data_feed.fetch_forex_candles(pair=symbol, timeframe=timeframe, count=100)
-            if df_live.empty or len(df_live) < 35:
+            if df_live.empty or len(df_live) < 25:
                 return jsonify({
                     "success": False,
                     "error": f"Insufficient live forex candle data returned for {symbol} ({timeframe}).",
                 }), 502
+
+            # Retrieve higher-timeframe context for multi-timeframe short-TF engine
+            df_4h_extra = forex_data_feed.fetch_forex_candles(pair=symbol, timeframe="4h", count=50, use_cache=True)
+            df_1h_extra = forex_data_feed.fetch_forex_candles(pair=symbol, timeframe="1h", count=100, use_cache=True)
+            df_15m_extra = forex_data_feed.fetch_forex_candles(pair=symbol, timeframe="15m", count=100, use_cache=True)
+
+            if timeframe == "1m":
+                df_1m_extra = df_live
+                # Fetch 5M for primary setup
+                df_5m_live = forex_data_feed.fetch_forex_candles(pair=symbol, timeframe="5m", count=100, use_cache=True)
+                df_setup = df_5m_live if not df_5m_live.empty else df_live
+            elif timeframe == "5m":
+                df_setup = df_live
+                df_1m_extra = forex_data_feed.fetch_forex_candles(pair=symbol, timeframe="1m", count=50, use_cache=True)
+            else:
+                df_setup = df_live
 
             df_htf = forex_data_feed.fetch_higher_timeframe_forex_data(
                 pair=symbol,
@@ -276,7 +306,7 @@ def get_signal():
                 ema_period=200,
                 use_cache=True,
             )
-            df_merged = forex_data_feed.attach_higher_timeframe_trend(df_live, df_htf)
+            df_merged = forex_data_feed.attach_higher_timeframe_trend(df_setup, df_htf)
             data_source_label = "Live market data — Yahoo Finance"
         else:
             logger.info(f"API request: Fetching live {timeframe} crypto candles for {symbol} via Binance...")
@@ -308,6 +338,12 @@ def get_signal():
             df=df_merged,
             htf_trend=htf_trend_val,
             regime_override=regime_res,
+            pair=symbol,
+            timeframe=timeframe,
+            df_1m=df_1m_extra,
+            df_15m=df_15m_extra,
+            df_1h=df_1h_extra,
+            df_4h=df_4h_extra,
         )
 
         if decision.signal == "BUY":
@@ -353,6 +389,44 @@ def get_signal():
         ts_val = latest_bar["datetime"] if "datetime" in latest_bar else datetime.now(timezone.utc)
         ts_str = ts_val.strftime("%Y-%m-%d %H:%M:%S UTC") if isinstance(ts_val, pd.Timestamp) else str(ts_val)
 
+        # 6. Session awareness
+        if is_forex:
+            dt = ts_val.to_pydatetime() if isinstance(ts_val, pd.Timestamp) else (ts_val if isinstance(ts_val, datetime) else datetime.now(timezone.utc))
+            session_name = forex_sessions.classify_session(dt)
+        else:
+            session_name = "24/7 Market"
+
+        # 7. Pip distances for suggested SL / TP
+        pip_size = forex_utils.get_pip_size(symbol) if is_forex else 1.0
+        entry_p = decision.entry_price if decision.entry_price > 0 else snap["price"]
+        sl_dist = abs(entry_p - decision.stop_loss) if decision.stop_loss > 0 else 0.0
+        tp_dist = abs(decision.take_profit - entry_p) if decision.take_profit > 0 else 0.0
+        sl_pips = round(sl_dist / pip_size, 1) if (is_forex and pip_size > 0) else round(sl_dist, 2)
+        tp_pips = round(tp_dist / pip_size, 1) if (is_forex and pip_size > 0) else round(tp_dist, 2)
+
+        # 8. Confidence breakdown
+        conf = decision.confidence
+        confidence_payload = {
+            "score": conf.score if conf else 0,
+            "tier": conf.tier if conf else "LOW",
+            "passed": conf.passed_minimum_threshold if conf else False,
+            "factors": conf.factors if conf else [],
+            "breakdown": conf.breakdown if conf else {},
+            "summary": conf.summary if conf else "",
+        }
+
+        # Include overall & out-of-sample backtest metrics if cached
+        overall_bt = tf_cache.get("_overall", {})
+        oos_bt = tf_cache.get("_out_of_sample", {})
+        if overall_bt:
+            backtest_payload["overall_win_rate"] = overall_bt.get("win_rate")
+            backtest_payload["overall_profit_factor"] = overall_bt.get("profit_factor")
+            backtest_payload["overall_trades"] = overall_bt.get("trades")
+        if oos_bt:
+            backtest_payload["oos_win_rate"] = oos_bt.get("win_rate")
+            backtest_payload["oos_profit_factor"] = oos_bt.get("profit_factor")
+            backtest_payload["oos_trades"] = oos_bt.get("trades")
+
         return jsonify({
             "success": True,
             "symbol": symbol,
@@ -363,10 +437,18 @@ def get_signal():
             "signal": signal_label,
             "regime": regime_name,
             "rule_set": decision.rule_set,
+            "session": {
+                "name": session_name,
+                "is_active_liquidity": session_name in ("LONDON", "NEW_YORK", "LONDON_NY_OVERLAP"),
+                "is_rollover": session_name == "ROLLOVER",
+            },
+            "confidence": confidence_payload,
             "suggested_levels": {
-                "entry": format_price_val(decision.entry_price if decision.entry_price > 0 else snap["price"], is_forex),
+                "entry": format_price_val(entry_p, is_forex),
                 "stop_loss": format_price_val(decision.stop_loss, is_forex),
                 "take_profit": format_price_val(decision.take_profit, is_forex),
+                "sl_pips": sl_pips,
+                "tp_pips": tp_pips,
                 "risk_reward_ratio": round(decision.risk_reward_ratio, 2),
             },
             "macro_htf_trend": htf_trend_val,
@@ -392,6 +474,77 @@ def get_signal():
             "success": False,
             "error": f"Internal evaluation error: {str(exc)}",
         }), 500
+
+
+@app.route("/api/forex/signals", methods=["GET"])
+def api_forex_signals():
+    """
+    Returns live signal cards and metadata across all 7 major FX pairs.
+    Strictly Read-Only: zero order placement, zero broker connections.
+    """
+    try:
+        import forex_signal_engine
+        engine = forex_signal_engine.get_signal_engine()
+        results = {}
+        for pair in forex_signal_engine.SUPPORTED_PAIRS:
+            sig = engine.health.active_signals.get(pair)
+            if sig:
+                results[pair] = sig
+            else:
+                # evaluate on-demand if not cached
+                df_5m = forex_data_feed.fetch_forex_candles(pair, "5m", count=60)
+                df_1m = forex_data_feed.fetch_forex_candles(pair, "1m", count=60)
+                df_15m = forex_data_feed.fetch_forex_candles(pair, "15m", count=60)
+                df_1h = forex_data_feed.fetch_forex_candles(pair, "1h", count=60)
+                df_4h = forex_data_feed.fetch_forex_candles(pair, "4h", count=60)
+                evaluated_sig = engine.evaluate_pair(pair, df_5m, df_1m, df_15m, df_1h, df_4h)
+                results[pair] = {
+                    "pair": evaluated_sig.pair,
+                    "direction": evaluated_sig.direction,
+                    "signal_time_ist": evaluated_sig.signal_time_ist,
+                    "signal_time_utc": evaluated_sig.signal_time_utc,
+                    "entry_price": evaluated_sig.entry_price,
+                    "stop_loss": evaluated_sig.stop_loss,
+                    "take_profit_1": evaluated_sig.take_profit_1,
+                    "take_profit_2": evaluated_sig.take_profit_2,
+                    "risk_1r_pips": evaluated_sig.risk_1r_pips,
+                    "regime_4h": evaluated_sig.regime_4h,
+                    "trend_1h": evaluated_sig.trend_1h,
+                    "spread_pips": evaluated_sig.spread_pips,
+                    "signal_id": evaluated_sig.signal_id,
+                    "is_valid_signal": evaluated_sig.is_valid_signal,
+                    "rejection_reason": evaluated_sig.rejection_reason,
+                    "card": evaluated_sig.to_card(),
+                }
+
+        engine.update_health(is_connected=True)
+        return jsonify({
+            "success": True,
+            "mode": "SIGNAL_ONLY (MANUAL EXECUTION ONLY)",
+            "broker_trading": "DISABLED",
+            "health": engine.get_health_snapshot(),
+            "signals": results,
+        })
+    except Exception as exc:
+        logger.error(f"Error in api_forex_signals: {exc}")
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+
+@app.route("/api/forex/health", methods=["GET"])
+def api_forex_health():
+    """Returns engine health, feed freshness, and safety status."""
+    try:
+        import forex_signal_engine
+        engine = forex_signal_engine.get_signal_engine()
+        engine.update_health(is_connected=True)
+        return jsonify({
+            "success": True,
+            "mode": "SIGNAL_ONLY",
+            "broker_trading": "DISABLED",
+            "health": engine.get_health_snapshot(),
+        })
+    except Exception as exc:
+        return jsonify({"success": False, "error": str(exc)}), 500
 
 
 def run_web_server(host: str = "0.0.0.0", port: int = 5000, debug: bool = False):

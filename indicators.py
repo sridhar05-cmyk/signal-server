@@ -4,19 +4,22 @@ Pure, stateless mathematical functions using pandas and numpy.
 Includes EMA, RSI, MACD, Bollinger Bands, and Average True Range (ATR).
 """
 
-from typing import Tuple
+from typing import Tuple, Any, Union
 import numpy as np
 import pandas as pd
 
 
-def _get_price_series(df: pd.DataFrame, col_name: str = "close") -> pd.Series:
-    """Helper function to safely extract price series handling case variations."""
-    if col_name in df.columns:
-        return df[col_name].astype(float)
-    col_lower_map = {c.lower(): c for c in df.columns}
-    if col_name.lower() in col_lower_map:
-        return df[col_lower_map[col_name.lower()]].astype(float)
-    raise KeyError(f"Price column '{col_name}' not found in DataFrame columns: {list(df.columns)}")
+def _get_price_series(df: Any, col_name: str = "close") -> pd.Series:
+    """Helper function to safely extract price series handling case variations and pd.Series."""
+    if isinstance(df, pd.Series):
+        return df.astype(float)
+    if hasattr(df, "columns"):
+        if col_name in df.columns:
+            return df[col_name].astype(float)
+        col_lower_map = {c.lower(): c for c in df.columns}
+        if col_name.lower() in col_lower_map:
+            return df[col_lower_map[col_name.lower()]].astype(float)
+    raise KeyError(f"Price column '{col_name}' not found in DataFrame columns: {list(df.columns) if hasattr(df, 'columns') else type(df)}")
 
 
 def ema(df: pd.DataFrame, period: int, price_col: str = "close") -> pd.Series:

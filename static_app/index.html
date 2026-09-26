@@ -739,6 +739,146 @@ body {
   color: #34d399;
 }
 
+.pip-tag {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+/* ==========================================================================
+   Session Tags & Confidence Pill
+   ========================================================================== */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.session-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.04em;
+}
+
+.session-tag.active-session {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.session-tag.rollover-session {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.session-tag.quiet-session {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.confidence-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card-sub);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  margin-top: 6px;
+}
+
+.conf-title {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.conf-denom {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.conf-tier {
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.conf-tier.tier-high {
+  color: #10b981;
+}
+
+.conf-tier.tier-medium {
+  color: #f59e0b;
+}
+
+.conf-tier.tier-low {
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   Confidence Factors Breakdown Box
+   ========================================================================== */
+.confidence-factors-box {
+  margin-top: 14px;
+  background: rgba(10, 13, 20, 0.6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+}
+
+.factors-header {
+  margin-bottom: 8px;
+}
+
+.factors-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.factors-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.factors-list li {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.factors-list li.factor-passed {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.factors-list li.factor-failed {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.factors-list li.factor-neutral {
+  color: var(--text-secondary);
+  background: rgba(148, 163, 184, 0.05);
+}
+
 /* ==========================================================================
    Footer
    ========================================================================== */
@@ -981,7 +1121,7 @@ body {
   <!-- Static Snapshot Notice Note (Requirement 5) -->
   <div class="snapshot-notice-banner">
     <span class="snapshot-badge">SNAPSHOT</span>
-    <span>Snapshot data as of 2026-09-19 13:57:15 UTC — not live-updating. Re-run backtest.py and rebuild this page for fresh numbers.</span>
+    <span>Snapshot data as of 2026-09-22 16:18:44 UTC — not live-updating. Re-run backtest.py and rebuild this page for fresh numbers.</span>
   </div>
 
   <main class="app-container">
@@ -999,7 +1139,7 @@ body {
           </svg>
           <span>OFFLINE SNAPSHOT</span>
         </span>
-        <span class="timestamp-label">2026-09-19 13:57:15 UTC</span>
+        <span class="timestamp-label">2026-09-22 16:18:44 UTC</span>
       </div>
     </section>
 
@@ -1638,6 +1778,36 @@ body {
         "pair": "EUR/USD",
         "timeframe": "1h",
         "regime": "TRENDING_UP",
+        "trades": 11,
+        "sample_size": 11,
+        "wins": 6,
+        "losses": 5,
+        "win_rate": null,
+        "raw_win_rate": 54.55,
+        "profit_factor": null,
+        "raw_profit_factor": 0.45,
+        "net_pnl": -221.4,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "EUR/USD",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 3,
+        "sample_size": 3,
+        "wins": 2,
+        "losses": 1,
+        "win_rate": null,
+        "raw_win_rate": 66.67,
+        "profit_factor": null,
+        "raw_profit_factor": 0.92,
+        "net_pnl": -8.12,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "EUR/USD",
+        "timeframe": "1h",
+        "regime": "RANGING",
         "trades": 0,
         "sample_size": 0,
         "wins": 0,
@@ -1649,50 +1819,50 @@ body {
         "net_pnl": 0.0,
         "insufficient_data": true
       },
-      "TRENDING_DOWN": {
+      "_overall": {
         "pair": "EUR/USD",
         "timeframe": "1h",
-        "regime": "TRENDING_DOWN",
-        "trades": 4,
-        "sample_size": 4,
-        "wins": 0,
-        "losses": 4,
+        "regime": "_overall",
+        "trades": 14,
+        "sample_size": 14,
+        "wins": 8,
+        "losses": 6,
         "win_rate": null,
-        "raw_win_rate": 0.0,
+        "raw_win_rate": 57.14,
         "profit_factor": null,
-        "raw_profit_factor": 0.0,
-        "net_pnl": -21.24,
+        "raw_profit_factor": 0.55,
+        "net_pnl": -229.52,
         "insufficient_data": true
       },
-      "RANGING": {
+      "_out_of_sample": {
         "pair": "EUR/USD",
         "timeframe": "1h",
-        "regime": "RANGING",
-        "trades": 6,
-        "sample_size": 6,
-        "wins": 2,
-        "losses": 4,
+        "regime": "_out_of_sample",
+        "trades": 7,
+        "sample_size": 7,
+        "wins": 4,
+        "losses": 3,
         "win_rate": null,
-        "raw_win_rate": 33.33,
+        "raw_win_rate": 57.14,
         "profit_factor": null,
-        "raw_profit_factor": 0.16,
-        "net_pnl": -27.72,
+        "raw_profit_factor": 0.57,
+        "net_pnl": -127.76,
         "insufficient_data": true
       },
       "COMBINED": {
         "pair": "EUR/USD",
         "timeframe": "1h",
         "regime": "COMBINED",
-        "trades": 10,
-        "sample_size": 10,
-        "wins": 2,
-        "losses": 8,
-        "win_rate": null,
-        "raw_win_rate": 20.0,
-        "profit_factor": null,
+        "trades": 35,
+        "sample_size": 35,
+        "wins": 20,
+        "losses": 15,
+        "win_rate": 57.14,
+        "raw_win_rate": 57.14,
+        "profit_factor": 0.09,
         "raw_profit_factor": 0.09,
-        "net_pnl": -48.96,
-        "insufficient_data": true
+        "net_pnl": -586.8,
+        "insufficient_data": false
       }
     },
     "4h": {
@@ -1700,60 +1870,90 @@ body {
         "pair": "EUR/USD",
         "timeframe": "4h",
         "regime": "TRENDING_UP",
-        "trades": 27,
-        "sample_size": 27,
-        "wins": 6,
-        "losses": 21,
+        "trades": 8,
+        "sample_size": 8,
+        "wins": 7,
+        "losses": 1,
         "win_rate": null,
-        "raw_win_rate": 22.22,
+        "raw_win_rate": 87.5,
         "profit_factor": null,
-        "raw_profit_factor": 0.18,
-        "net_pnl": -143.63,
+        "raw_profit_factor": 0.89,
+        "net_pnl": -10.94,
         "insufficient_data": true
       },
       "TRENDING_DOWN": {
         "pair": "EUR/USD",
         "timeframe": "4h",
         "regime": "TRENDING_DOWN",
-        "trades": 35,
-        "sample_size": 35,
-        "wins": 3,
-        "losses": 32,
-        "win_rate": 8.57,
-        "raw_win_rate": 8.57,
-        "profit_factor": 0.03,
-        "raw_profit_factor": 0.03,
-        "net_pnl": -452.84,
-        "insufficient_data": false
+        "trades": 12,
+        "sample_size": 12,
+        "wins": 4,
+        "losses": 8,
+        "win_rate": null,
+        "raw_win_rate": 33.33,
+        "profit_factor": null,
+        "raw_profit_factor": 0.14,
+        "net_pnl": -571.54,
+        "insufficient_data": true
       },
       "RANGING": {
         "pair": "EUR/USD",
         "timeframe": "4h",
         "regime": "RANGING",
-        "trades": 12,
-        "sample_size": 12,
+        "trades": 1,
+        "sample_size": 1,
         "wins": 0,
-        "losses": 12,
+        "losses": 1,
         "win_rate": null,
         "raw_win_rate": 0.0,
         "profit_factor": null,
         "raw_profit_factor": 0.0,
-        "net_pnl": -142.05,
+        "net_pnl": -97.21,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "EUR/USD",
+        "timeframe": "4h",
+        "regime": "_overall",
+        "trades": 21,
+        "sample_size": 21,
+        "wins": 11,
+        "losses": 10,
+        "win_rate": null,
+        "raw_win_rate": 52.38,
+        "profit_factor": null,
+        "raw_profit_factor": 0.21,
+        "net_pnl": -679.69,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "EUR/USD",
+        "timeframe": "4h",
+        "regime": "_out_of_sample",
+        "trades": 4,
+        "sample_size": 4,
+        "wins": 3,
+        "losses": 1,
+        "win_rate": null,
+        "raw_win_rate": 75.0,
+        "profit_factor": null,
+        "raw_profit_factor": 11.19,
+        "net_pnl": 39.14,
         "insufficient_data": true
       },
       "COMBINED": {
         "pair": "EUR/USD",
         "timeframe": "4h",
         "regime": "COMBINED",
-        "trades": 74,
-        "sample_size": 74,
-        "wins": 9,
-        "losses": 65,
-        "win_rate": 12.16,
-        "raw_win_rate": 12.16,
+        "trades": 46,
+        "sample_size": 46,
+        "wins": 25,
+        "losses": 21,
+        "win_rate": 54.35,
+        "raw_win_rate": 54.35,
         "profit_factor": 0.06,
         "raw_profit_factor": 0.06,
-        "net_pnl": -738.52,
+        "net_pnl": -1320.24,
         "insufficient_data": false
       }
     }
@@ -2639,6 +2839,1122 @@ body {
         "insufficient_data": false
       }
     }
+  },
+  "GBP/USD": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "GBP/USD",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 10,
+        "sample_size": 10,
+        "wins": 6,
+        "losses": 4,
+        "win_rate": null,
+        "raw_win_rate": 60.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.38,
+        "net_pnl": -256.86,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "GBP/USD",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 5,
+        "sample_size": 5,
+        "wins": 2,
+        "losses": 3,
+        "win_rate": null,
+        "raw_win_rate": 40.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.09,
+        "net_pnl": -116.98,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "GBP/USD",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 0,
+        "losses": 1,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -2.44,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "GBP/USD",
+        "timeframe": "1h",
+        "regime": "_overall",
+        "trades": 16,
+        "sample_size": 16,
+        "wins": 8,
+        "losses": 8,
+        "win_rate": null,
+        "raw_win_rate": 50.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.31,
+        "net_pnl": -376.28,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "GBP/USD",
+        "timeframe": "1h",
+        "regime": "_out_of_sample",
+        "trades": 5,
+        "sample_size": 5,
+        "wins": 2,
+        "losses": 3,
+        "win_rate": null,
+        "raw_win_rate": 40.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.09,
+        "net_pnl": -113.89,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "GBP/USD",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 37,
+        "sample_size": 37,
+        "wins": 18,
+        "losses": 19,
+        "win_rate": 48.65,
+        "raw_win_rate": 48.65,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -866.45,
+        "insufficient_data": false
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "GBP/USD",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 11,
+        "sample_size": 11,
+        "wins": 6,
+        "losses": 5,
+        "win_rate": null,
+        "raw_win_rate": 54.55,
+        "profit_factor": null,
+        "raw_profit_factor": 0.22,
+        "net_pnl": -327.85,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "GBP/USD",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 12,
+        "sample_size": 12,
+        "wins": 7,
+        "losses": 5,
+        "win_rate": null,
+        "raw_win_rate": 58.33,
+        "profit_factor": null,
+        "raw_profit_factor": 0.9,
+        "net_pnl": -54.82,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "GBP/USD",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "GBP/USD",
+        "timeframe": "4h",
+        "regime": "_overall",
+        "trades": 23,
+        "sample_size": 23,
+        "wins": 13,
+        "losses": 10,
+        "win_rate": null,
+        "raw_win_rate": 56.52,
+        "profit_factor": null,
+        "raw_profit_factor": 0.59,
+        "net_pnl": -382.67,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "GBP/USD",
+        "timeframe": "4h",
+        "regime": "_out_of_sample",
+        "trades": 10,
+        "sample_size": 10,
+        "wins": 6,
+        "losses": 4,
+        "win_rate": null,
+        "raw_win_rate": 60.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.86,
+        "net_pnl": -53.5,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "GBP/USD",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 56,
+        "sample_size": 56,
+        "wins": 32,
+        "losses": 24,
+        "win_rate": 57.14,
+        "raw_win_rate": 57.14,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -818.84,
+        "insufficient_data": false
+      }
+    }
+  },
+  "USD/JPY": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "USD/JPY",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 2,
+        "sample_size": 2,
+        "wins": 0,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -128.2,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "USD/JPY",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 17,
+        "sample_size": 17,
+        "wins": 6,
+        "losses": 11,
+        "win_rate": null,
+        "raw_win_rate": 35.29,
+        "profit_factor": null,
+        "raw_profit_factor": 0.02,
+        "net_pnl": -527.46,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "USD/JPY",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 2,
+        "sample_size": 2,
+        "wins": 2,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 64.39,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "USD/JPY",
+        "timeframe": "1h",
+        "regime": "_overall",
+        "trades": 21,
+        "sample_size": 21,
+        "wins": 8,
+        "losses": 13,
+        "win_rate": null,
+        "raw_win_rate": 38.1,
+        "profit_factor": null,
+        "raw_profit_factor": 0.11,
+        "net_pnl": -591.27,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "USD/JPY",
+        "timeframe": "1h",
+        "regime": "_out_of_sample",
+        "trades": 8,
+        "sample_size": 8,
+        "wins": 3,
+        "losses": 5,
+        "win_rate": null,
+        "raw_win_rate": 37.5,
+        "profit_factor": null,
+        "raw_profit_factor": 0.02,
+        "net_pnl": -177.2,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "USD/JPY",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 50,
+        "sample_size": 50,
+        "wins": 19,
+        "losses": 31,
+        "win_rate": 38.0,
+        "raw_win_rate": 38.0,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -1359.74,
+        "insufficient_data": false
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "USD/JPY",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 11,
+        "sample_size": 11,
+        "wins": 9,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 81.82,
+        "profit_factor": null,
+        "raw_profit_factor": 2.72,
+        "net_pnl": 177.94,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "USD/JPY",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 6,
+        "sample_size": 6,
+        "wins": 1,
+        "losses": 5,
+        "win_rate": null,
+        "raw_win_rate": 16.67,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -422.16,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "USD/JPY",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 2,
+        "sample_size": 2,
+        "wins": 1,
+        "losses": 1,
+        "win_rate": null,
+        "raw_win_rate": 50.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.29,
+        "net_pnl": -15.89,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "USD/JPY",
+        "timeframe": "4h",
+        "regime": "_overall",
+        "trades": 19,
+        "sample_size": 19,
+        "wins": 11,
+        "losses": 8,
+        "win_rate": null,
+        "raw_win_rate": 57.89,
+        "profit_factor": null,
+        "raw_profit_factor": 0.53,
+        "net_pnl": -260.11,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "USD/JPY",
+        "timeframe": "4h",
+        "regime": "_out_of_sample",
+        "trades": 8,
+        "sample_size": 8,
+        "wins": 4,
+        "losses": 4,
+        "win_rate": null,
+        "raw_win_rate": 50.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.09,
+        "net_pnl": -301.31,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "USD/JPY",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 46,
+        "sample_size": 46,
+        "wins": 26,
+        "losses": 20,
+        "win_rate": 56.52,
+        "raw_win_rate": 56.52,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -821.53,
+        "insufficient_data": false
+      }
+    }
+  },
+  "USD/CHF": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "USD/CHF",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 7,
+        "sample_size": 7,
+        "wins": 3,
+        "losses": 4,
+        "win_rate": null,
+        "raw_win_rate": 42.86,
+        "profit_factor": null,
+        "raw_profit_factor": 0.19,
+        "net_pnl": -285.81,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "USD/CHF",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 9,
+        "sample_size": 9,
+        "wins": 2,
+        "losses": 7,
+        "win_rate": null,
+        "raw_win_rate": 22.22,
+        "profit_factor": null,
+        "raw_profit_factor": 0.05,
+        "net_pnl": -433.15,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "USD/CHF",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 2,
+        "sample_size": 2,
+        "wins": 0,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -136.3,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "USD/CHF",
+        "timeframe": "1h",
+        "regime": "_overall",
+        "trades": 18,
+        "sample_size": 18,
+        "wins": 5,
+        "losses": 13,
+        "win_rate": null,
+        "raw_win_rate": 27.78,
+        "profit_factor": null,
+        "raw_profit_factor": 0.09,
+        "net_pnl": -855.26,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "USD/CHF",
+        "timeframe": "1h",
+        "regime": "_out_of_sample",
+        "trades": 4,
+        "sample_size": 4,
+        "wins": 2,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 50.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.8,
+        "net_pnl": -16.36,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "USD/CHF",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 40,
+        "sample_size": 40,
+        "wins": 12,
+        "losses": 28,
+        "win_rate": 30.0,
+        "raw_win_rate": 30.0,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -1726.88,
+        "insufficient_data": false
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "USD/CHF",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 13,
+        "sample_size": 13,
+        "wins": 6,
+        "losses": 7,
+        "win_rate": null,
+        "raw_win_rate": 46.15,
+        "profit_factor": null,
+        "raw_profit_factor": 0.39,
+        "net_pnl": -370.66,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "USD/CHF",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 7,
+        "sample_size": 7,
+        "wins": 2,
+        "losses": 5,
+        "win_rate": null,
+        "raw_win_rate": 28.57,
+        "profit_factor": null,
+        "raw_profit_factor": 0.15,
+        "net_pnl": -423.27,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "USD/CHF",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "USD/CHF",
+        "timeframe": "4h",
+        "regime": "_overall",
+        "trades": 20,
+        "sample_size": 20,
+        "wins": 8,
+        "losses": 12,
+        "win_rate": null,
+        "raw_win_rate": 40.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.28,
+        "net_pnl": -793.93,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "USD/CHF",
+        "timeframe": "4h",
+        "regime": "_out_of_sample",
+        "trades": 4,
+        "sample_size": 4,
+        "wins": 2,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 50.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.08,
+        "net_pnl": -178.28,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "USD/CHF",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 44,
+        "sample_size": 44,
+        "wins": 18,
+        "losses": 26,
+        "win_rate": 40.91,
+        "raw_win_rate": 40.91,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -1766.14,
+        "insufficient_data": false
+      }
+    }
+  },
+  "AUD/USD": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "AUD/USD",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 15,
+        "sample_size": 15,
+        "wins": 7,
+        "losses": 8,
+        "win_rate": null,
+        "raw_win_rate": 46.67,
+        "profit_factor": null,
+        "raw_profit_factor": 0.21,
+        "net_pnl": -395.53,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "AUD/USD",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 0.75,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "AUD/USD",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 2,
+        "sample_size": 2,
+        "wins": 0,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -112.54,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "AUD/USD",
+        "timeframe": "1h",
+        "regime": "_overall",
+        "trades": 18,
+        "sample_size": 18,
+        "wins": 8,
+        "losses": 10,
+        "win_rate": null,
+        "raw_win_rate": 44.44,
+        "profit_factor": null,
+        "raw_profit_factor": 0.17,
+        "net_pnl": -507.32,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "AUD/USD",
+        "timeframe": "1h",
+        "regime": "_out_of_sample",
+        "trades": 3,
+        "sample_size": 3,
+        "wins": 2,
+        "losses": 1,
+        "win_rate": null,
+        "raw_win_rate": 66.67,
+        "profit_factor": null,
+        "raw_profit_factor": 0.05,
+        "net_pnl": -36.2,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "AUD/USD",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 39,
+        "sample_size": 39,
+        "wins": 18,
+        "losses": 21,
+        "win_rate": 46.15,
+        "raw_win_rate": 46.15,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -1050.84,
+        "insufficient_data": false
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "AUD/USD",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 12,
+        "sample_size": 12,
+        "wins": 3,
+        "losses": 9,
+        "win_rate": null,
+        "raw_win_rate": 25.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -342.13,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "AUD/USD",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 10,
+        "sample_size": 10,
+        "wins": 7,
+        "losses": 3,
+        "win_rate": null,
+        "raw_win_rate": 70.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.79,
+        "net_pnl": -26.54,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "AUD/USD",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "AUD/USD",
+        "timeframe": "4h",
+        "regime": "_overall",
+        "trades": 22,
+        "sample_size": 22,
+        "wins": 10,
+        "losses": 12,
+        "win_rate": null,
+        "raw_win_rate": 45.45,
+        "profit_factor": null,
+        "raw_profit_factor": 0.22,
+        "net_pnl": -368.67,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "AUD/USD",
+        "timeframe": "4h",
+        "regime": "_out_of_sample",
+        "trades": 7,
+        "sample_size": 7,
+        "wins": 3,
+        "losses": 4,
+        "win_rate": null,
+        "raw_win_rate": 42.86,
+        "profit_factor": null,
+        "raw_profit_factor": 1.27,
+        "net_pnl": 6.73,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "AUD/USD",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 51,
+        "sample_size": 51,
+        "wins": 23,
+        "losses": 28,
+        "win_rate": 45.1,
+        "raw_win_rate": 45.1,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -730.61,
+        "insufficient_data": false
+      }
+    }
+  },
+  "USD/CAD": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "USD/CAD",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 7,
+        "sample_size": 7,
+        "wins": 5,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 71.43,
+        "profit_factor": null,
+        "raw_profit_factor": 0.86,
+        "net_pnl": -14.52,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "USD/CAD",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 10,
+        "sample_size": 10,
+        "wins": 7,
+        "losses": 3,
+        "win_rate": null,
+        "raw_win_rate": 70.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.87,
+        "net_pnl": -27.08,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "USD/CAD",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "USD/CAD",
+        "timeframe": "1h",
+        "regime": "_overall",
+        "trades": 17,
+        "sample_size": 17,
+        "wins": 12,
+        "losses": 5,
+        "win_rate": null,
+        "raw_win_rate": 70.59,
+        "profit_factor": null,
+        "raw_profit_factor": 0.87,
+        "net_pnl": -41.6,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "USD/CAD",
+        "timeframe": "1h",
+        "regime": "_out_of_sample",
+        "trades": 9,
+        "sample_size": 9,
+        "wins": 8,
+        "losses": 1,
+        "win_rate": null,
+        "raw_win_rate": 88.89,
+        "profit_factor": null,
+        "raw_profit_factor": 49.47,
+        "net_pnl": 200.67,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "USD/CAD",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 43,
+        "sample_size": 43,
+        "wins": 32,
+        "losses": 11,
+        "win_rate": 74.42,
+        "raw_win_rate": 74.42,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 117.47,
+        "insufficient_data": false
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "USD/CAD",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 17,
+        "sample_size": 17,
+        "wins": 10,
+        "losses": 7,
+        "win_rate": null,
+        "raw_win_rate": 58.82,
+        "profit_factor": null,
+        "raw_profit_factor": 0.28,
+        "net_pnl": -375.42,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "USD/CAD",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 12,
+        "sample_size": 12,
+        "wins": 4,
+        "losses": 8,
+        "win_rate": null,
+        "raw_win_rate": 33.33,
+        "profit_factor": null,
+        "raw_profit_factor": 0.19,
+        "net_pnl": -479.73,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "USD/CAD",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 0,
+        "losses": 1,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -35.25,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "USD/CAD",
+        "timeframe": "4h",
+        "regime": "_overall",
+        "trades": 30,
+        "sample_size": 30,
+        "wins": 14,
+        "losses": 16,
+        "win_rate": 46.67,
+        "raw_win_rate": 46.67,
+        "profit_factor": 0.23,
+        "raw_profit_factor": 0.23,
+        "net_pnl": -890.4,
+        "insufficient_data": false
+      },
+      "_out_of_sample": {
+        "pair": "USD/CAD",
+        "timeframe": "4h",
+        "regime": "_out_of_sample",
+        "trades": 8,
+        "sample_size": 8,
+        "wins": 4,
+        "losses": 4,
+        "win_rate": null,
+        "raw_win_rate": 50.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.23,
+        "net_pnl": -176.01,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "USD/CAD",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 68,
+        "sample_size": 68,
+        "wins": 32,
+        "losses": 36,
+        "win_rate": 47.06,
+        "raw_win_rate": 47.06,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -1956.81,
+        "insufficient_data": false
+      }
+    }
+  },
+  "NZD/USD": {
+    "1h": {
+      "TRENDING_UP": {
+        "pair": "NZD/USD",
+        "timeframe": "1h",
+        "regime": "TRENDING_UP",
+        "trades": 7,
+        "sample_size": 7,
+        "wins": 1,
+        "losses": 6,
+        "win_rate": null,
+        "raw_win_rate": 14.29,
+        "profit_factor": null,
+        "raw_profit_factor": 0.02,
+        "net_pnl": -423.92,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "NZD/USD",
+        "timeframe": "1h",
+        "regime": "TRENDING_DOWN",
+        "trades": 3,
+        "sample_size": 3,
+        "wins": 1,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 33.33,
+        "profit_factor": null,
+        "raw_profit_factor": 0.15,
+        "net_pnl": -10.71,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "NZD/USD",
+        "timeframe": "1h",
+        "regime": "RANGING",
+        "trades": 1,
+        "sample_size": 1,
+        "wins": 1,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 100.0,
+        "profit_factor": null,
+        "raw_profit_factor": 999.0,
+        "net_pnl": 65.95,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "NZD/USD",
+        "timeframe": "1h",
+        "regime": "_overall",
+        "trades": 11,
+        "sample_size": 11,
+        "wins": 3,
+        "losses": 8,
+        "win_rate": null,
+        "raw_win_rate": 27.27,
+        "profit_factor": null,
+        "raw_profit_factor": 0.17,
+        "net_pnl": -368.68,
+        "insufficient_data": true
+      },
+      "_out_of_sample": {
+        "pair": "NZD/USD",
+        "timeframe": "1h",
+        "regime": "_out_of_sample",
+        "trades": 3,
+        "sample_size": 3,
+        "wins": 1,
+        "losses": 2,
+        "win_rate": null,
+        "raw_win_rate": 33.33,
+        "profit_factor": null,
+        "raw_profit_factor": 0.15,
+        "net_pnl": -10.71,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "NZD/USD",
+        "timeframe": "1h",
+        "regime": "COMBINED",
+        "trades": 25,
+        "sample_size": 25,
+        "wins": 7,
+        "losses": 18,
+        "win_rate": null,
+        "raw_win_rate": 28.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -748.07,
+        "insufficient_data": true
+      }
+    },
+    "4h": {
+      "TRENDING_UP": {
+        "pair": "NZD/USD",
+        "timeframe": "4h",
+        "regime": "TRENDING_UP",
+        "trades": 15,
+        "sample_size": 15,
+        "wins": 4,
+        "losses": 11,
+        "win_rate": null,
+        "raw_win_rate": 26.67,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -855.01,
+        "insufficient_data": true
+      },
+      "TRENDING_DOWN": {
+        "pair": "NZD/USD",
+        "timeframe": "4h",
+        "regime": "TRENDING_DOWN",
+        "trades": 19,
+        "sample_size": 19,
+        "wins": 11,
+        "losses": 8,
+        "win_rate": null,
+        "raw_win_rate": 57.89,
+        "profit_factor": null,
+        "raw_profit_factor": 0.95,
+        "net_pnl": -18.69,
+        "insufficient_data": true
+      },
+      "RANGING": {
+        "pair": "NZD/USD",
+        "timeframe": "4h",
+        "regime": "RANGING",
+        "trades": 0,
+        "sample_size": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "raw_win_rate": 0.0,
+        "profit_factor": null,
+        "raw_profit_factor": 0.0,
+        "net_pnl": 0.0,
+        "insufficient_data": true
+      },
+      "_overall": {
+        "pair": "NZD/USD",
+        "timeframe": "4h",
+        "regime": "_overall",
+        "trades": 34,
+        "sample_size": 34,
+        "wins": 15,
+        "losses": 19,
+        "win_rate": 44.12,
+        "raw_win_rate": 44.12,
+        "profit_factor": 0.27,
+        "raw_profit_factor": 0.27,
+        "net_pnl": -873.7,
+        "insufficient_data": false
+      },
+      "_out_of_sample": {
+        "pair": "NZD/USD",
+        "timeframe": "4h",
+        "regime": "_out_of_sample",
+        "trades": 13,
+        "sample_size": 13,
+        "wins": 7,
+        "losses": 6,
+        "win_rate": null,
+        "raw_win_rate": 53.85,
+        "profit_factor": null,
+        "raw_profit_factor": 0.15,
+        "net_pnl": -183.42,
+        "insufficient_data": true
+      },
+      "COMBINED": {
+        "pair": "NZD/USD",
+        "timeframe": "4h",
+        "regime": "COMBINED",
+        "trades": 81,
+        "sample_size": 81,
+        "wins": 37,
+        "losses": 44,
+        "win_rate": 45.68,
+        "raw_win_rate": 45.68,
+        "profit_factor": 0.0,
+        "raw_profit_factor": 0.0,
+        "net_pnl": -1930.82,
+        "insufficient_data": false
+      }
+    }
   }
 };
     const PAIR_GROUPS = [
@@ -2797,7 +4113,7 @@ body {
     ]
   }
 ];
-    const SNAPSHOT_TIMESTAMP = "2026-09-19 13:57:15 UTC";
+    const SNAPSHOT_TIMESTAMP = "2026-09-22 16:18:44 UTC";
     const MIN_CONFIDENCE_TRADES = 30;
 
     document.addEventListener("DOMContentLoaded", () => {
