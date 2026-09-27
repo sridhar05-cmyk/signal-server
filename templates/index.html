@@ -2,264 +2,1093 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Signal Research Panel | Spot Trading Observer</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Live Forex Signal Dashboard | Signal-Only</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-body: #0b0f19;
+      --bg-surface: #111827;
+      --bg-surface-elevated: #1f293d;
+      --bg-surface-subtle: #172033;
+      --border-subtle: #1f2a40;
+      --border-strong: #2e3d5b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --color-buy: #10b981;
+      --color-buy-bg: rgba(16, 185, 129, 0.12);
+      --color-buy-border: rgba(16, 185, 129, 0.35);
+      --color-buy-glow: rgba(16, 185, 129, 0.25);
+      
+      --color-sell: #f43f5e;
+      --color-sell-bg: rgba(244, 63, 94, 0.12);
+      --color-sell-border: rgba(244, 63, 94, 0.35);
+      --color-sell-glow: rgba(244, 63, 94, 0.25);
+      
+      --color-neutral: #64748b;
+      --color-neutral-bg: rgba(100, 116, 139, 0.10);
+      --color-neutral-border: rgba(100, 116, 139, 0.25);
+      
+      --color-stale: #f59e0b;
+      --color-stale-bg: rgba(245, 158, 11, 0.12);
+      --color-stale-border: rgba(245, 158, 11, 0.35);
+      
+      --color-blue: #38bdf8;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+      padding-bottom: 40px;
+    }
+
+    /* Sticky Top Header */
+    .top-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11, 15, 25, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .header-inner {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .brand-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .live-pulse {
+      width: 10px;
+      height: 10px;
+      background: var(--color-buy);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--color-buy);
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+
+    .live-pulse.stale-pulse {
+      background: var(--color-stale);
+      box-shadow: 0 0 10px var(--color-stale);
+    }
+
+    @keyframes pulse-ring {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .brand-title h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge-chip {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 4px 9px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .chip-signal-only {
+      background: rgba(56, 189, 248, 0.14);
+      color: var(--color-blue);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+    }
+
+    .chip-trading-disabled {
+      background: rgba(244, 63, 94, 0.16);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.4);
+    }
+
+    /* Status Bar Strip */
+    .status-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+    }
+
+    .status-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .status-metric {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-name {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mono-val {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    .status-tag {
+      padding: 2px 7px;
+      border-radius: var(--radius-sm);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .status-tag.tag-live {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-buy);
+      border: 1px solid var(--color-buy-border);
+    }
+
+    .status-tag.tag-stale {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--color-stale);
+      border: 1px solid var(--color-stale-border);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .auto-refresh-pill {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background: var(--bg-surface-elevated);
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .refresh-button {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 38px;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .refresh-button:hover {
+      background: #1d4ed8;
+      box-shadow: 0 0 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .refresh-button:active {
+      transform: scale(0.97);
+    }
+
+    .refresh-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .spin {
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Auto-refresh timer progress bar */
+    .progress-bar-container {
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--color-blue);
+      width: 100%;
+      transition: width 0.1s linear;
+    }
+
+    /* Main Container */
+    .dashboard-container {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 16px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Market Notice Alert Banner */
+    .market-banner {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      color: #fde68a;
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .market-banner.hidden {
+      display: none;
+    }
+
+    .market-banner .banner-icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .banner-content strong {
+      color: #fff;
+    }
+
+    /* Card Grid: Mobile first (1 col) -> Tablet (2 col) -> Desktop (3-4 col) */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 640px) {
+      .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (min-width: 1320px) {
+      .cards-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    /* Signal Card */
+    .signal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .signal-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Card States */
+    .signal-card.card-buy {
+      border-color: var(--color-buy-border);
+      box-shadow: 0 0 16px var(--color-buy-glow);
+    }
+
+    .signal-card.card-buy::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--color-buy);
+    }
+
+    .signal-card.card-sell {
+      border-color: var(--color-sell-border);
+      box-shadow: 0 0 16px var(--color-sell-glow);
+    }
+
+    .signal-card.card-sell::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--color-sell);
+    }
+
+    .signal-card.card-neutral {
+      border-color: var(--border-subtle);
+    }
+
+    .signal-card.card-stale {
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+
+    /* Card Header */
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .pair-badge-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .pair-symbol {
+      font-size: 1.22rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+      font-family: var(--font-sans);
+    }
+
+    .pair-regime {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* Signal Badges */
+    .card-signal-badge {
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .badge-buy {
+      background: var(--color-buy-bg);
+      color: var(--color-buy);
+      border: 1px solid var(--color-buy-border);
+    }
+
+    .badge-sell {
+      background: var(--color-sell-bg);
+      color: var(--color-sell);
+      border: 1px solid var(--color-sell-border);
+    }
+
+    .badge-neutral {
+      background: var(--color-neutral-bg);
+      color: #94a3b8;
+      border: 1px solid var(--color-neutral-border);
+    }
+
+    .badge-stale {
+      background: var(--color-stale-bg);
+      color: #fde68a;
+      border: 1px solid var(--color-stale-border);
+      font-size: 0.72rem;
+      padding: 5px 8px;
+      white-space: normal;
+      text-align: right;
+    }
+
+    /* Rejection or Status Note Box */
+    .status-note-box {
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .status-note-box.note-stale {
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.25);
+      color: #fcd34d;
+    }
+
+    .note-title {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.64rem;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+    }
+
+    .status-note-box.note-stale .note-title {
+      color: #fbbf24;
+    }
+
+    /* Price Levels Grid (2 x 2) */
+    .levels-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--bg-surface-elevated);
+      border-radius: var(--radius-md);
+      padding: 10px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .level-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .level-label {
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .level-val {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .level-val.val-buy { color: var(--color-buy); }
+    .level-val.val-sell { color: var(--color-sell); }
+    .level-val.val-sl { color: #f87171; }
+    .level-val.val-tp { color: #34d399; }
+    .level-val.val-muted { color: var(--text-dim); }
+
+    /* Metadata Bar */
+    .metadata-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      background: var(--bg-surface-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px;
+      border: 1px solid var(--border-subtle);
+      text-align: center;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .meta-label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .meta-val {
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* Card Footer */
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 8px;
+      margin-top: 2px;
+    }
+
+    .footer-time {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    .footer-id {
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      font-size: 0.64rem;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Loading Skeletons */
+    .skeleton-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .skeleton-line {
+      height: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes skeleton-pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+
+    /* Footer Safety Disclaimer */
+    .footer-safety {
+      max-width: 1360px;
+      margin: 30px auto 0;
+      padding: 16px;
+      text-align: center;
+      border-top: 1px solid var(--border-subtle);
+      color: var(--text-dim);
+      font-size: 0.75rem;
+      line-height: 1.6;
+    }
+
+    .footer-safety strong {
+      color: var(--text-muted);
+    }
+
+    /* Mobile Enhancements (Android / iOS) */
+    @media (max-width: 639px) {
+      .header-inner {
+        padding: 10px 12px;
+      }
+      .brand-title h1 {
+        font-size: 1.05rem;
+      }
+      .status-strip {
+        padding: 8px 10px;
+      }
+      .status-group {
+        gap: 10px;
+      }
+      .metric-value {
+        font-size: 0.76rem;
+      }
+      .refresh-button {
+        padding: 6px 12px;
+        min-height: 40px;
+        font-size: 0.78rem;
+      }
+      .dashboard-container {
+        padding: 12px;
+      }
+      .signal-card {
+        padding: 14px;
+      }
+      .pair-symbol {
+        font-size: 1.15rem;
+      }
+      .level-val {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
 </head>
 <body>
-  <!-- Fixed, Non-Dismissible Safety & Integrity Banner -->
-  <header class="top-notice-banner" role="alert">
-    <div class="banner-inner">
-      <span class="banner-badge">RESEARCH ONLY</span>
-      <span class="banner-text">Read-only research tool. No orders are placed. No paid tier unlocks different data.</span>
+
+  <!-- Top Sticky Navigation & Safety Banner -->
+  <header class="top-header">
+    <div class="header-inner">
+      <div class="brand-bar">
+        <div class="brand-title">
+          <div id="livePulseIndicator" class="live-pulse"></div>
+          <h1>LIVE FOREX SIGNALS</h1>
+        </div>
+        <div class="brand-badges">
+          <span class="badge-chip chip-signal-only">SIGNAL ONLY</span>
+          <span class="badge-chip chip-trading-disabled">🔒 BROKER TRADING: DISABLED</span>
+        </div>
+      </div>
+
+      <div class="status-strip">
+        <div class="status-group">
+          <div class="status-metric">
+            <span class="metric-name">DATA STATUS</span>
+            <span id="dataStatusBadge" class="metric-value">
+              <span class="status-tag tag-stale">CHECKING...</span>
+            </span>
+          </div>
+          <div class="status-metric">
+            <span class="metric-name">LAST UPDATE (IST)</span>
+            <span id="lastUpdateText" class="metric-value mono-val">--:--:-- IST</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="auto-refresh-pill" title="Next auto-scan cycle">
+            <span>Scan in</span>
+            <strong id="countdownSecs">30s</strong>
+          </div>
+          <button id="refreshBtn" class="refresh-button" onclick="triggerManualRefresh()">
+            <svg id="refreshIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6"/>
+              <path d="M2.5 11.5a10 10 0 0 1 18-3.5l1 2M21.5 12.5a10 10 0 0 1-18 3.5l-1-2"/>
+            </svg>
+            <span id="refreshBtnLabel">REFRESH</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 30-Second Refresh Progress Fill -->
+    <div class="progress-bar-container">
+      <div id="progressBarFill" class="progress-bar-fill"></div>
     </div>
   </header>
 
-  <main class="app-container">
-    <!-- Header Title Section -->
-    <section class="panel-header">
-      <div class="title-group">
-        <h1>Signal Research Panel</h1>
-        <p class="subtitle">Live market indicator readings paired with verified, empirical walk-forward backtest metrics.</p>
+  <!-- Main Content Dashboard -->
+  <main class="dashboard-container">
+    
+    <!-- Stale / Market Closed Alert Banner -->
+    <div id="staleAlertBanner" class="market-banner hidden">
+      <span class="banner-icon">⚠️</span>
+      <div class="banner-content">
+        <strong>MARKET DATA NOTICE:</strong>
+        <span id="staleAlertMessage">Forex markets are currently closed or candle feeds are stale. All pairs safely display "NO SIGNAL — MARKET DATA STALE". No trades will generate until live liquid market hours resume.</span>
       </div>
-      <div class="header-actions">
-        <button id="refreshBtn" class="action-btn" title="Fetch latest candle update">
-          <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M23 4v6h-6M1 20v-6h6"/>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-          </svg>
-          <span>Refresh</span>
-        </button>
-        <span id="lastUpdated" class="timestamp-label">Syncing...</span>
-      </div>
+    </div>
+
+    <!-- 7 Major Currency Pairs Grid -->
+    <section id="cardsGrid" class="cards-grid">
+      <!-- Loading skeletons initially injected -->
+      <div class="skeleton-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 60px;"></div><div class="skeleton-line"></div></div>
+      <div class="skeleton-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 60px;"></div><div class="skeleton-line"></div></div>
+      <div class="skeleton-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 60px;"></div><div class="skeleton-line"></div></div>
+      <div class="skeleton-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 60px;"></div><div class="skeleton-line"></div></div>
+      <div class="skeleton-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 60px;"></div><div class="skeleton-line"></div></div>
+      <div class="skeleton-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 60px;"></div><div class="skeleton-line"></div></div>
+      <div class="skeleton-card"><div class="skeleton-line" style="width: 50%;"></div><div class="skeleton-line" style="height: 60px;"></div><div class="skeleton-line"></div></div>
     </section>
 
-    <!-- Step 1: Pair Picker -->
-    <section class="selection-card">
-      <div class="step-header">
-        <span class="step-number">STEP 1</span>
-        <h2>Select Trading Pair</h2>
-        <span class="step-hint">Pairs without cached backtests are labeled Untested</span>
-      </div>
-      <div id="pairContainer" class="chips-container" aria-label="Trading Pairs">
-        <!-- Injected via JavaScript from /api/pairs -->
-        <div class="chip-skeleton">Loading pairs...</div>
-      </div>
-    </section>
-
-    <!-- Step 2: Timeframe Picker -->
-    <section class="selection-card">
-      <div class="step-header">
-        <span class="step-number">STEP 2</span>
-        <h2>Select Timeframe</h2>
-        <span class="step-hint">Each interval evaluates an independent strategy model</span>
-      </div>
-      <div id="timeframeContainer" class="timeframe-buttons" aria-label="Timeframes">
-        <button class="tf-btn" data-tf="1m">1m</button>
-        <button class="tf-btn" data-tf="5m">5m</button>
-        <button class="tf-btn" data-tf="15m">15m</button>
-        <button class="tf-btn active" data-tf="1h">1h</button>
-        <button class="tf-btn" data-tf="4h">4h</button>
-      </div>
-    </section>
-
-    <!-- Result Panel (Signal, Regime, Backtested Metrics, Indicators) -->
-    <section id="resultPanel" class="result-panel">
-      <!-- Top Signal Summary Header -->
-      <div class="result-summary-card">
-        <div class="summary-left">
-          <div class="pair-timeframe-tag">
-            <span id="displaySymbol">EUR/USD</span>
-            <span class="dot-separator">•</span>
-            <span id="displayTimeframe">1h</span>
-          </div>
-          <div class="tag-row">
-            <span id="dataSourceBadge" class="source-tag">Live market data — Yahoo Finance</span>
-            <span id="sessionBadge" class="session-tag">SESSION: --</span>
-          </div>
-          <div class="price-display">
-            <span class="price-label">Current Close:</span>
-            <span id="displayPrice" class="price-value">1.00000</span>
-          </div>
-        </div>
-
-        <div class="summary-center">
-          <span class="metric-label">CURRENT SIGNAL</span>
-          <div id="signalBadge" class="signal-badge signal-hold">
-            <span id="signalText">NO_SIGNAL</span>
-          </div>
-          <span id="ruleSetText" class="rule-subtext">Evaluating market...</span>
-          <div id="confidencePill" class="confidence-pill">
-            <span class="conf-title">Confidence:</span>
-            <strong id="confidenceScoreVal">--</strong><span class="conf-denom">/100</span>
-            <span id="confidenceTierVal" class="conf-tier">(--)</span>
-          </div>
-        </div>
-
-        <div class="summary-right">
-          <span class="metric-label">DETECTED REGIME</span>
-          <div id="regimeBadge" class="regime-badge">UNKNOWN</div>
-          <span id="macroTrendText" class="macro-subtext">Macro Trend: --</span>
-        </div>
-      </div>
-
-      <!-- Main Two-Column Analysis Section -->
-      <div class="analysis-grid">
-        <!-- Left: Empirical Backtest Track Record -->
-        <div class="analysis-card backtest-card">
-          <div class="card-header">
-            <h3>Historical Backtest Performance</h3>
-            <span class="card-tag">EXACT REGIME + TIMEFRAME</span>
-          </div>
-          <p class="card-description">
-            Empirical walk-forward metrics for this exact pair, timeframe, and regime combination.
-          </p>
-
-          <!-- Win Rate Visualization Bar -->
-          <div class="win-rate-block">
-            <div class="win-rate-header">
-              <span class="stat-title">Historical Win Rate</span>
-              <span id="winRateValue" class="stat-number">--.-%</span>
-            </div>
-
-            <!-- Gauge Container with 50% Breakeven Threshold -->
-            <div class="gauge-wrapper">
-              <div class="gauge-track">
-                <div id="winRateBar" class="gauge-fill" style="width: 0%;"></div>
-                <!-- 50% Reference Marker -->
-                <div class="breakeven-line" title="50% Breakeven Reference">
-                  <span class="breakeven-label">50% Breakeven</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Insufficient Data Alert Box (Shown when sample size < 30) -->
-            <div id="insufficientDataAlert" class="warning-box hidden">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              <div>
-                <strong>Insufficient data — not enough completed trades yet.</strong>
-                <p>Empirical sample size is under the mandatory 30-trade statistical confidence threshold. Win rate is withheld to prevent misleading estimation.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Secondary Backtest Metrics Grid -->
-          <div class="backtest-metrics-grid">
-            <div class="metric-box">
-              <span class="box-label">Profit Factor</span>
-              <span id="profitFactorValue" class="box-value">-.--</span>
-              <span class="box-hint">Gross Profit / Gross Loss</span>
-            </div>
-            <div class="metric-box">
-              <span class="box-label">Sample Size</span>
-              <span id="sampleSizeValue" class="box-value">n = --</span>
-              <span id="sampleConfidenceLabel" class="box-hint">Trades recorded</span>
-            </div>
-            <div class="metric-box">
-              <span class="box-label">W / L Record</span>
-              <span id="recordValue" class="box-value">--W / --L</span>
-              <span class="box-hint">Historical outcomes</span>
-            </div>
-            <div class="metric-box">
-              <span class="box-label">Net P&amp;L</span>
-              <span id="netPnlValue" class="box-value">$---.--</span>
-              <span class="box-hint">Historical simulation</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Live Indicator Readings -->
-        <div class="analysis-card indicators-card">
-          <div class="card-header">
-            <h3>Live Technical Indicators</h3>
-            <span class="card-tag">CURRENT CANDLE</span>
-          </div>
-          <p class="card-description">
-            Real-time indicator readings computed on the most recently closed candlestick bar.
-          </p>
-
-          <div class="indicators-grid">
-            <div class="ind-card">
-              <span class="ind-name">EMA (9 vs 21)</span>
-              <div class="ind-dual-value">
-                <span id="valEma9" class="mono-val">$---.--</span>
-                <span class="vs-divider">/</span>
-                <span id="valEma21" class="mono-val">$---.--</span>
-              </div>
-              <span id="valEmaCrossStatus" class="ind-status">Trend state</span>
-            </div>
-
-            <div class="ind-card">
-              <span class="ind-name">RSI (14)</span>
-              <span id="valRsi" class="ind-main-val">--.-</span>
-              <span id="valRsiStatus" class="ind-status">Momentum zone</span>
-            </div>
-
-            <div class="ind-card">
-              <span class="ind-name">MACD Histogram</span>
-              <span id="valMacd" class="ind-main-val">-.----</span>
-              <span id="valMacdStatus" class="ind-status">Histogram delta</span>
-            </div>
-
-            <div class="ind-card">
-              <span class="ind-name">Bollinger Position</span>
-              <span id="valBbPos" class="ind-main-val">--%</span>
-              <span id="valBbStatus" class="ind-status">Band envelope</span>
-            </div>
-
-            <div class="ind-card">
-              <span class="ind-name">ATR (14)</span>
-              <span id="valAtr" class="ind-main-val">$---.--</span>
-              <span class="ind-status">Volatility range</span>
-            </div>
-
-            <div class="ind-card">
-              <span class="ind-name">Suggested R:R</span>
-              <span id="valRiskReward" class="ind-main-val">1:1.50</span>
-              <span class="ind-status">Reference SL / TP</span>
-            </div>
-          </div>
-
-          <!-- Suggested Levels (Informational Only) -->
-          <div class="suggested-levels-box">
-            <div class="levels-header">
-              <span class="levels-title">Suggested Price Levels (Informational Only — Never Executed)</span>
-            </div>
-            <div class="levels-row">
-              <div>Entry: <strong id="levelEntry" class="mono-val">$---.--</strong></div>
-              <div>Stop-Loss: <strong id="levelSl" class="mono-val sl-val">$---.--</strong> <span id="levelSlPips" class="pip-tag">(-- pips)</span></div>
-              <div>Take-Profit: <strong id="levelTp" class="mono-val tp-val">$---.--</strong> <span id="levelTpPips" class="pip-tag">(-- pips)</span></div>
-            </div>
-          </div>
-
-          <!-- Signal Quality & Confidence Factor Breakdown -->
-          <div class="confidence-factors-box">
-            <div class="factors-header">
-              <span class="factors-title">Signal Quality &amp; Confirmation Checklist</span>
-            </div>
-            <ul id="confidenceFactorsList" class="factors-list">
-              <li>Awaiting signal evaluation...</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Footer Disclaimers -->
-    <footer class="panel-footer">
-      <div class="footer-notice">
-        <p><strong>Transparency Standard:</strong> All backtested metrics represent walk-forward simulations against historical Binance public candle feeds. Backtested performance is not a guarantee of future outcomes. This panel is strictly an educational and research observation console with zero broker ordering capabilities.</p>
-      </div>
+    <!-- Operational & Safety Policy Footer -->
+    <footer class="footer-safety">
+      <p>
+        <strong>SAFETY GOVERNANCE:</strong>
+        This service is strictly <strong>SIGNAL ONLY</strong> for manual observation and execution.
+        Broker order execution, automatic placement, and trading API credentials are permanently <strong>DISABLED</strong>.
+        Strategy rules: Phase 7 Mod C (1H SIDEWAYS Exclusion + 4H TRENDING_UP &le; 0.80 ATR) paired with frozen Candidate C Partial TP (1.0R / 2.0R) architecture.
+      </p>
     </footer>
   </main>
 
-  <script src="/static/app.js"></script>
+  <!-- JavaScript Frontend Logic -->
+  <script>
+    // Ordered 7 major currency pairs
+    const PAIR_ORDER = [
+      "EUR/USD",
+      "GBP/USD",
+      "USD/JPY",
+      "USD/CHF",
+      "AUD/USD",
+      "USD/CAD",
+      "NZD/USD"
+    ];
+
+    let countdownSeconds = 30;
+    let timerInterval = null;
+    let isFetching = false;
+
+    // Helper: format prices with pair decimals
+    function formatPrice(val, pair) {
+      if (!val || val === 0 || isNaN(val)) return "—";
+      const num = parseFloat(val);
+      if (pair.includes("JPY")) {
+        return num.toFixed(3);
+      }
+      return num.toFixed(5);
+    }
+
+    // Helper: format pips
+    function formatPips(val) {
+      if (!val || val === 0 || isNaN(val)) return "—";
+      return `${parseFloat(val).toFixed(1)} pips`;
+    }
+
+    // Helper: escape HTML strings safely
+    function escapeHtml(str) {
+      if (!str) return "";
+      const div = document.createElement("div");
+      div.innerText = str;
+      return div.innerHTML;
+    }
+
+    // Fetch live signals from /api/forex/signals
+    async function fetchSignals(isManual = false) {
+      if (isFetching) return;
+      isFetching = true;
+
+      const refreshBtn = document.getElementById("refreshBtn");
+      const refreshIcon = document.getElementById("refreshIcon");
+      const refreshBtnLabel = document.getElementById("refreshBtnLabel");
+
+      if (refreshIcon) refreshIcon.classList.add("spin");
+      if (refreshBtn) refreshBtn.disabled = true;
+      if (refreshBtnLabel) refreshBtnLabel.textContent = "SCANNING...";
+
+      try {
+        const url = isManual ? "/api/forex/signals?refresh=true" : "/api/forex/signals";
+        const res = await fetch(url, { credentials: "same-origin" });
+        if (!res.ok) {
+          throw new Error(`HTTP Error ${res.status}`);
+        }
+        const data = await res.json();
+        renderDashboard(data);
+      } catch (err) {
+        console.error("Failed to load signals:", err);
+        showErrorState(err.message);
+      } finally {
+        isFetching = false;
+        if (refreshIcon) refreshIcon.classList.remove("spin");
+        if (refreshBtn) refreshBtn.disabled = false;
+        if (refreshBtnLabel) refreshBtnLabel.textContent = "REFRESH";
+        resetCountdown();
+      }
+    }
+
+    // Render cards and top status
+    function renderDashboard(payload) {
+      const signals = payload.signals || {};
+      const health = payload.health || {};
+      const cardsGrid = document.getElementById("cardsGrid");
+
+      // 1. Update Top Status: Last Update (IST)
+      const lastUpdateText = document.getElementById("lastUpdateText");
+      if (health.current_time_ist) {
+        lastUpdateText.textContent = health.current_time_ist;
+      } else {
+        const now = new Date();
+        lastUpdateText.textContent = now.toLocaleTimeString("en-GB", { timeZone: "Asia/Kolkata" }) + " IST";
+      }
+
+      // 2. Check if Data Feed is Stale or Disconnected
+      let hasStalePair = false;
+      let staleReasonSummary = "";
+
+      // Check all pairs for stale market status
+      for (const pair of PAIR_ORDER) {
+        const sig = signals[pair];
+        if (sig && sig.rejection_reason && sig.rejection_reason.includes("STALE")) {
+          hasStalePair = true;
+          staleReasonSummary = sig.rejection_reason;
+          break;
+        }
+      }
+
+      const isDataStale = hasStalePair || health.data_connection_status === "DISCONNECTED_OR_STALE";
+
+      // 3. Update DATA STATUS Badge & Pulse Indicator
+      const dataStatusBadge = document.getElementById("dataStatusBadge");
+      const livePulse = document.getElementById("livePulseIndicator");
+      const staleBanner = document.getElementById("staleAlertBanner");
+
+      if (isDataStale) {
+        dataStatusBadge.innerHTML = `<span class="status-tag tag-stale">MARKET CLOSED / STALE</span>`;
+        livePulse.classList.add("stale-pulse");
+        staleBanner.classList.remove("hidden");
+        const alertMsg = document.getElementById("staleAlertMessage");
+        if (staleReasonSummary) {
+          alertMsg.textContent = `Market feed is inactive: ${staleReasonSummary}. All pairs strictly hold "NO SIGNAL — MARKET DATA STALE" to safeguard against false executions.`;
+        }
+      } else {
+        dataStatusBadge.innerHTML = `<span class="status-tag tag-live">LIVE FEED</span>`;
+        livePulse.classList.remove("stale-pulse");
+        staleBanner.classList.add("hidden");
+      }
+
+      // 4. Render 7 Currency Pair Cards in strict order
+      let html = "";
+      PAIR_ORDER.forEach(pair => {
+        const sig = signals[pair] || {};
+        const direction = (sig.direction || "NO SIGNAL").toUpperCase();
+        const isValid = Boolean(sig.is_valid_signal);
+        const rejection = sig.rejection_reason || "";
+        const isPairStale = isDataStale || rejection.includes("STALE");
+
+        // Determine Card State & Visual styling
+        let cardStateClass = "card-neutral";
+        let badgeHtml = "";
+        let isBuy = false;
+        let isSell = false;
+
+        if (isPairStale) {
+          // Requirement 9: If market is closed or data is stale, clearly display:
+          // "NO SIGNAL — MARKET DATA STALE". Do not display a BUY/SELL signal.
+          cardStateClass = "card-stale";
+          badgeHtml = `<span class="card-signal-badge badge-stale">⚠️ NO SIGNAL — MARKET DATA STALE</span>`;
+        } else if (isValid && direction === "BUY") {
+          cardStateClass = "card-buy";
+          badgeHtml = `<span class="card-signal-badge badge-buy">▲ BUY</span>`;
+          isBuy = true;
+        } else if (isValid && direction === "SELL") {
+          cardStateClass = "card-sell";
+          badgeHtml = `<span class="card-signal-badge badge-sell">▼ SELL</span>`;
+          isSell = true;
+        } else {
+          cardStateClass = "card-neutral";
+          badgeHtml = `<span class="card-signal-badge badge-neutral">● NO SIGNAL</span>`;
+        }
+
+        // Values display
+        const entryDisplay = (isValid && !isPairStale) ? formatPrice(sig.entry_price, pair) : "—";
+        const slDisplay = (isValid && !isPairStale) ? formatPrice(sig.stop_loss, pair) : "—";
+        const tp1Display = (isValid && !isPairStale) ? formatPrice(sig.take_profit_1, pair) : "—";
+        const tp2Display = (isValid && !isPairStale) ? formatPrice(sig.take_profit_2, pair) : "—";
+        const riskDisplay = (isValid && !isPairStale) ? formatPips(sig.risk_1r_pips) : "—";
+
+        const regime = sig.regime_4h || "UNKNOWN";
+        const trend1h = sig.trend_1h || "UNKNOWN";
+        const spread = sig.spread_pips ? `${parseFloat(sig.spread_pips).toFixed(1)} p` : "—";
+        const signalId = sig.signal_id || "—";
+        const signalTimeIst = sig.signal_time_ist || "—";
+
+        // Rejection / Stale Message Note
+        let noteHtml = "";
+        if (isPairStale) {
+          noteHtml = `
+            <div class="status-note-box note-stale">
+              <span class="note-title">MARKET STALE REASON</span>
+              <span>${escapeHtml(rejection || "Live feed inactive / Weekend close. Trading halted.")}</span>
+            </div>
+          `;
+        } else if (!isValid && rejection) {
+          noteHtml = `
+            <div class="status-note-box">
+              <span class="note-title">FILTER / REJECTION REASON</span>
+              <span>${escapeHtml(rejection)}</span>
+            </div>
+          `;
+        } else if (isValid) {
+          noteHtml = `
+            <div class="status-note-box" style="border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.08); color: #6ee7b7;">
+              <span class="note-title" style="color: #34d399;">MOD C CONFIRMED SETUP</span>
+              <span>1H context aligned &bull; 4H overextension &le; 0.80 ATR &bull; Valid candle close</span>
+            </div>
+          `;
+        }
+
+        html += `
+          <article class="signal-card ${cardStateClass}">
+            <div class="card-top">
+              <div class="pair-badge-group">
+                <span class="pair-symbol">${escapeHtml(pair)}</span>
+                <span class="pair-regime">${escapeHtml(regime)}</span>
+              </div>
+              <div class="card-signal-badge-box">
+                ${badgeHtml}
+              </div>
+            </div>
+
+            ${noteHtml}
+
+            <!-- Price Levels Grid -->
+            <div class="levels-grid">
+              <div class="level-block">
+                <span class="level-label">ENTRY PRICE</span>
+                <span class="level-val ${isBuy ? 'val-buy' : (isSell ? 'val-sell' : 'val-muted')}">${entryDisplay}</span>
+              </div>
+              <div class="level-block">
+                <span class="level-label">STOP LOSS</span>
+                <span class="level-val ${(isValid && !isPairStale) ? 'val-sl' : 'val-muted'}">${slDisplay}</span>
+              </div>
+              <div class="level-block">
+                <span class="level-label">TP1 (+1R)</span>
+                <span class="level-val ${(isValid && !isPairStale) ? 'val-tp' : 'val-muted'}">${tp1Display}</span>
+              </div>
+              <div class="level-block">
+                <span class="level-label">TP2 (+2R)</span>
+                <span class="level-val ${(isValid && !isPairStale) ? 'val-tp' : 'val-muted'}">${tp2Display}</span>
+              </div>
+            </div>
+
+            <!-- Risk & Market Metrics -->
+            <div class="metadata-bar">
+              <div class="meta-item">
+                <span class="meta-label">1R RISK</span>
+                <span class="meta-val">${riskDisplay}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">SPREAD</span>
+                <span class="meta-val">${spread}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">1H TREND</span>
+                <span class="meta-val">${escapeHtml(trend1h)}</span>
+              </div>
+            </div>
+
+            <!-- Card Footer -->
+            <div class="card-footer">
+              <span class="footer-time" title="Signal timestamp in Indian Standard Time">${escapeHtml(signalTimeIst)}</span>
+              <span class="footer-id" title="Deterministic Signal ID">${escapeHtml(signalId)}</span>
+            </div>
+          </article>
+        `;
+      });
+
+      cardsGrid.innerHTML = html;
+    }
+
+    function showErrorState(msg) {
+      const cardsGrid = document.getElementById("cardsGrid");
+      cardsGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; background: #1e1b2e; border: 1px solid #e11d48; border-radius: 12px; padding: 24px; text-align: center;">
+          <h3 style="color: #fda4af; margin-bottom: 8px;">Network or Feed Error</h3>
+          <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 16px;">${escapeHtml(msg)}</p>
+          <button class="refresh-button" style="margin: 0 auto;" onclick="triggerManualRefresh()">Retry Now</button>
+        </div>
+      `;
+    }
+
+    function triggerManualRefresh() {
+      fetchSignals(true);
+    }
+
+    // Auto-refresh countdown management
+    function startCountdown() {
+      if (timerInterval) clearInterval(timerInterval);
+      countdownSeconds = 30;
+
+      timerInterval = setInterval(() => {
+        countdownSeconds -= 1;
+        if (countdownSeconds < 0) {
+          fetchSignals(false);
+          countdownSeconds = 30;
+        }
+
+        const countEl = document.getElementById("countdownSecs");
+        if (countEl) countEl.textContent = `${countdownSeconds}s`;
+
+        const fillEl = document.getElementById("progressBarFill");
+        if (fillEl) {
+          const pct = ((30 - countdownSeconds) / 30) * 100;
+          fillEl.style.width = `${pct}%`;
+        }
+      }, 1000);
+    }
+
+    function resetCountdown() {
+      countdownSeconds = 30;
+      const countEl = document.getElementById("countdownSecs");
+      if (countEl) countEl.textContent = "30s";
+      const fillEl = document.getElementById("progressBarFill");
+      if (fillEl) fillEl.style.width = "0%";
+    }
+
+    // Initial load on page ready
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchSignals(false);
+      startCountdown();
+    });
+  </script>
 </body>
 </html>

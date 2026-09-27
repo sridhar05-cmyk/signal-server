@@ -183,8 +183,15 @@ def compute_indicator_snapshot(df: pd.DataFrame, is_forex: bool = False) -> Dict
 
 @app.route("/")
 def index():
-    """Renders the main Signal Research Panel."""
+    """Renders the Live Forex Signal Dashboard."""
     return render_template("index.html")
+
+
+@app.route("/research")
+def research():
+    """Renders the previous Signal Research Panel."""
+    return render_template("research.html")
+
 
 
 @app.route("/api/pairs", methods=["GET"])
@@ -476,58 +483,87 @@ def get_signal():
         }), 500
 
 
+_last_signals_eval_ts: float = 0.0
+_signals_cache_data: Dict[str, Any] = {}
+
+
 @app.route("/api/forex/signals", methods=["GET"])
 def api_forex_signals():
     """
     Returns live signal cards and metadata across all 7 major FX pairs.
     Strictly Read-Only: zero order placement, zero broker connections.
     """
+    global _last_signals_eval_ts, _signals_cache_data
     try:
+        import time as _pytime
         import forex_signal_engine
         engine = forex_signal_engine.get_signal_engine()
-        results = {}
-        for pair in forex_signal_engine.SUPPORTED_PAIRS:
-            sig = engine.health.active_signals.get(pair)
-            if sig:
-                results[pair] = sig
-            else:
-                # evaluate on-demand if not cached
-                df_5m = forex_data_feed.fetch_forex_candles(pair, "5m", count=60)
-                df_1m = forex_data_feed.fetch_forex_candles(pair, "1m", count=60)
-                df_15m = forex_data_feed.fetch_forex_candles(pair, "15m", count=60)
-                df_1h = forex_data_feed.fetch_forex_candles(pair, "1h", count=60)
-                df_4h = forex_data_feed.fetch_forex_candles(pair, "4h", count=60)
-                evaluated_sig = engine.evaluate_pair(pair, df_5m, df_1m, df_15m, df_1h, df_4h)
-                results[pair] = {
-                    "pair": evaluated_sig.pair,
-                    "direction": evaluated_sig.direction,
-                    "signal_time_ist": evaluated_sig.signal_time_ist,
-                    "signal_time_utc": evaluated_sig.signal_time_utc,
-                    "entry_price": evaluated_sig.entry_price,
-                    "stop_loss": evaluated_sig.stop_loss,
-                    "take_profit_1": evaluated_sig.take_profit_1,
-                    "take_profit_2": evaluated_sig.take_profit_2,
-                    "risk_1r_pips": evaluated_sig.risk_1r_pips,
-                    "regime_4h": evaluated_sig.regime_4h,
-                    "trend_1h": evaluated_sig.trend_1h,
-                    "spread_pips": evaluated_sig.spread_pips,
-                    "signal_id": evaluated_sig.signal_id,
-                    "is_valid_signal": evaluated_sig.is_valid_signal,
-                    "rejection_reason": evaluated_sig.rejection_reason,
-                    "card": evaluated_sig.to_card(),
-                }
+        
+        force_refresh = request.args.get("refresh", "").lower() in ("1", "true", "yes")
+        now_ts = _pytime.time()
 
-        engine.update_health(is_connected=True)
-        return jsonify({
+        # Return cached evaluation if fresh (< 25s old) and not forced
+        if not force_refresh and (now_ts - _last_signals_eval_ts < 25.0) and _signals_cache_data:
+            return jsonify(_signals_cache_data)
+
+        results = {}
+        latest_candle_time = None
+
+        for pair in forex_signal_engine.SUPPORTED_PAIRS:
+            df_5m = forex_data_feed.fetch_forex_candles(pair, "5m", count=60)
+            df_1m = forex_data_feed.fetch_forex_candles(pair, "1m", count=60)
+            df_15m = forex_data_feed.fetch_forex_candles(pair, "15m", count=60)
+            df_1h = forex_data_feed.fetch_forex_candles(pair, "1h", count=60)
+            df_4h = forex_data_feed.fetch_forex_candles(pair, "4h", count=60)
+
+            if df_5m is not None and not df_5m.empty:
+                c_raw = df_5m.iloc[-1].get("datetime")
+                if c_raw is not None:
+                    if isinstance(c_raw, str):
+                        c_dt = pd.to_datetime(c_raw, utc=True).to_pydatetime()
+                    elif isinstance(c_raw, pd.Timestamp):
+                        c_dt = c_raw.to_pydatetime()
+                    else:
+                        c_dt = c_raw
+                    if latest_candle_time is None or (c_dt and c_dt > latest_candle_time):
+                        latest_candle_time = c_dt
+
+            evaluated_sig = engine.evaluate_pair(pair, df_5m, df_1m, df_15m, df_1h, df_4h)
+            card_dict = {
+                "pair": evaluated_sig.pair,
+                "direction": evaluated_sig.direction,
+                "signal_time_ist": evaluated_sig.signal_time_ist,
+                "signal_time_utc": evaluated_sig.signal_time_utc,
+                "entry_price": evaluated_sig.entry_price,
+                "stop_loss": evaluated_sig.stop_loss,
+                "take_profit_1": evaluated_sig.take_profit_1,
+                "take_profit_2": evaluated_sig.take_profit_2,
+                "risk_1r_pips": evaluated_sig.risk_1r_pips,
+                "regime_4h": evaluated_sig.regime_4h,
+                "trend_1h": evaluated_sig.trend_1h,
+                "spread_pips": evaluated_sig.spread_pips,
+                "signal_id": evaluated_sig.signal_id,
+                "is_valid_signal": evaluated_sig.is_valid_signal,
+                "rejection_reason": evaluated_sig.rejection_reason,
+                "card": evaluated_sig.to_card(),
+            }
+            results[pair] = card_dict
+            engine.health.active_signals[pair] = card_dict
+
+        engine.update_health(last_candle_utc=latest_candle_time, is_connected=True)
+        _last_signals_eval_ts = _pytime.time()
+        _signals_cache_data = {
             "success": True,
             "mode": "SIGNAL_ONLY (MANUAL EXECUTION ONLY)",
             "broker_trading": "DISABLED",
             "health": engine.get_health_snapshot(),
             "signals": results,
-        })
+        }
+        return jsonify(_signals_cache_data)
     except Exception as exc:
         logger.error(f"Error in api_forex_signals: {exc}")
         return jsonify({"success": False, "error": str(exc)}), 500
+
 
 
 @app.route("/api/forex/health", methods=["GET"])
