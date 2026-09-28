@@ -529,9 +529,11 @@ def api_forex_signals():
                         latest_candle_time = c_dt
 
             evaluated_sig = engine.evaluate_pair(pair, df_5m, df_1m, df_15m, df_1h, df_4h)
+            requested_tf = request.args.get("timeframe", "5M").upper()
             card_dict = {
                 "pair": evaluated_sig.pair,
                 "direction": evaluated_sig.direction,
+                "timeframe": requested_tf,
                 "signal_time_ist": evaluated_sig.signal_time_ist,
                 "signal_time_utc": evaluated_sig.signal_time_utc,
                 "entry_price": evaluated_sig.entry_price,
